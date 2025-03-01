@@ -1,7 +1,6 @@
 // script.js
 const BASE_URL = 'https://api.siliconflow.cn/v1/chat/completions';
 const MODEL = 'deepseek-ai/DeepSeek-V3';
-const MAGICCODE = atob('bWFnaWNjb2Rl');
 const MAX_TOKENS = 500;
 
 // 用户设置
@@ -17,7 +16,7 @@ const decoder = new TextDecoder();
 // 设置页脚文字
 function setFooterText() {
     const modelName = MODEL.split('/').pop(); // 获取最后一段
-    const footerElement = document.querySelector('.footer');
+    const footerElement = document.querySelector('.footer div');
     if (footerElement) {
         footerElement.textContent = `由 ${modelName} 强力驱动`;
     }
@@ -71,6 +70,28 @@ function saveUserSettings() {
 document.addEventListener('DOMContentLoaded', function() {
     setFooterText();
     initControlPanel();
+    
+    // 初始化赞赏码弹窗
+    const miniIcon = document.querySelector('.mini-icon');
+    const modal = document.getElementById('appreciationModal');
+    const closeButton = document.querySelector('.close-button');
+    
+    if (miniIcon && modal) {
+        miniIcon.addEventListener('click', function() {
+            modal.classList.add('show');
+        });
+        
+        closeButton.addEventListener('click', function() {
+            modal.classList.remove('show');
+        });
+        
+        // 点击弹窗外部关闭
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+    }
 });
 
 marked.setOptions({
@@ -178,7 +199,7 @@ async function getWordInfo() {
 
     try {
         const [magicRes, systemPrompt] = await Promise.all([
-            fetch(MAGICCODE).then(r => r.text()),
+            fetch(atob('bWFnaWNjb2Rl')).then(r => r.text()),
             get_system_prompt()
         ]);
 
