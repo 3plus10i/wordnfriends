@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word'n'Friend~</title>
+    <script src="./marked.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --accent-color: #3f37c9;
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --light-gray: #e9ecef;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        /* 标题和介绍样式 */
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .header em {
+            font-style: normal;
+            color: #6c757d;
+        }
+        
+        /* 控制面板样式 */
+        .control-panel {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 12px;
+            gap: 20px;
+        }
+        
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .control-label {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        /* 开关样式 - 缩小版 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 18px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 18px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(18px);
+        }
+        
+        .toggle-text {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        /* 滑动条样式 - 缩小版 */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .range-slider {
+            /* -webkit-appearance: none; */
+            appearance: none; /* 确保在所有浏览器中一致显示 */
+            width: 80px;
+            height: 4px;
+            border-radius: 3px;  
+            background: #d3d3d3;
+            outline: none;
+            padding: 0; /* 移除可能影响滑动范围的内边距 */
+            margin: 0; /* 移除可能影响滑动范围的外边距 */
+        }
+        
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%; 
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+        
+        .range-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+        
+        .slider-value {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--primary-color);
+            min-width: 16px;
+            text-align: center;
+        }
+        
+        /* 输入区域样式 */
+        .input-group {
+            display: flex;
+            margin: 16px 0;
+            gap: 12px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ced4da;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            transition: border 0.2s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var (--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+        
+        button {
+            padding: 12px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: var(--accent-color);
+        }
+        
+        /* 结果区域样式 */
+        #result {
+            margin-top: 24px;
+            padding: 32px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            min-height: 100px;
+        }
+        
+        /* Markdown样式 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        td, th {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+        }
+        
+        th {
+            background-color: #f1f3f5;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        /* 加载动画 */
+        .loader {
+            display: inline-block;
+            position: relative;
+            width: 100%;
+            text-align: center;
+            padding: 24px;
+        }
+        
+        .loader:after {
+            content: "加载中...";
+            color: var(--primary-color);
+            animation: loadingDots 1.5s infinite;
+        }
+        
+        @keyframes loadingDots {
+            0% { content: "加载中"; }
+            33% { content: "加载中."; }
+            66% { content: "加载中.."; }
+            100% { content: "加载中..."; }
+        }
+        
+        /* 页脚样式 */
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 14px;
+            color: #6c757d;
+            padding-top: 16px;
+            border-top: 1px solid var(--light-gray);
+        }
+        
+        /* 响应式样式 */
+        @media (max-width: 576px) {
+            .input-group {
+                flex-direction: column;
+            }
+            
+            input {
+                width: 100%;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            .control-panel {
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Word'n'Friends~</h2>
+        <em>AI单词拓展记忆助手</em>
+    </div>
+
+    <div class="control-panel">
+        <div class="control-item">
+            <span class="control-label">音标</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="phoneticToggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-text" id="phoneticType">英</span>
+        </div>
+        <div class="control-item">
+            <span class="control-label">联想数量</span>
+            <div class="slider-container">
+                <input type="range" min="1" max="10" value="5" class="range-slider" id="friendSlider">
+                <span class="slider-value" id="friendNumber">5</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="wordInput" placeholder="输入中/英文单词" onkeydown="if(event.key === 'Enter') getWordInfo()">
+        <button onclick="getWordInfo()">扩词</button>
+    </div>
+    
+    <div id="result"></div>
+    
+    <div class="footer">
+        由 DeepSeek-V3 驱动
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
