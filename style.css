@@ -212,6 +212,8 @@ button:hover {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     min-height: 100px;
+    position: relative; /* 为背景图定位提供参考 */
+    overflow: hidden; /* 确保背景图不溢出圆角 */
 }
 
 /* 结果控制按钮样式 */
@@ -508,10 +510,13 @@ tr:nth-child(even) {
     margin-bottom: 4px;
 }
 
-.config-item input {
+.config-item input, 
+.config-item select {
     width: 100%;
     padding: 8px;
     font-size: 14px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
 }
 
 .config-advice {
@@ -524,7 +529,7 @@ tr:nth-child(even) {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    margin-top: 16px;
+    margin-top: 8px;
 }
 
 .config-actions button {
@@ -532,13 +537,145 @@ tr:nth-child(even) {
     font-size: 12px;
 }
 
-.config-actions .reset-config {
+.config-actions .reset-config,
+.config-actions .delete-config {
+    background: transparent;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+}
+
+.config-actions .reset-config:hover,
+.config-actions .delete-config:hover {
+    background: #dc3545;
+    color: white;
+}
+
+.config-actions .set-current-config {
     background: transparent;
     border: 1px solid var(--primary-color);
     color: var(--primary-color);
 }
 
-.config-actions .reset-config:hover {
+.config-actions .set-current-config:hover {
     background: var(--primary-color);
     color: white;
+}
+
+.config-actions .add-new-config {
+    background: transparent;
+    border: 1px solid #28a745;
+    color: #28a745;
+    margin-right: auto; /* 将添加按钮推到左侧 */
+}
+
+.config-actions .add-new-config:hover {
+    background: #28a745;
+    color: white;
+}
+
+/* 每日一句样式 */
+.result-content blockquote {
+    border-left: 4px solid var(--primary-color);
+    padding-left: 16px;
+    margin: 16px 0;
+    color: #555;
+    font-style: italic;
+}
+
+.result-content h2 {
+    color: var(--primary-color);
+    margin-bottom: 16px;
+    font-size: 1.5em;
+}
+
+.result-content blockquote em {
+    font-style: normal;
+    font-weight: 500;
+    color: #333;
+    font-size: 1.1em;
+}
+
+/* 每日一句样式 */
+.daily-quote {
+    font-family: Georgia, serif;
+    padding: 10px;
+}
+
+.quote-english {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+    line-height: 1.4;
+}
+
+.quote-chinese {
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: #666;
+}
+
+.quote-source {
+    font-size: 14px;
+    color: #888;
+    text-align: right;
+    font-style: italic;
+}
+
+.daily-quote-loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--primary-color);
+}
+
+/* 单词结果区域 */
+.word-result {
+    min-height: 50px;
+}
+
+.error-message {
+    color: #dc3545;
+    padding: 10px;
+    border-left: 3px solid #dc3545;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* 自动消失的提示框样式 */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.toast {
+    background-color: rgba(59, 59, 59, 0.9);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    max-width: 300px;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.success {
+    border-left: 4px solid #28a745;
+}
+
+.toast.error {
+    border-left: 4px solid #dc3545;
+}
+
+.toast.info {
+    border-left: 4px solid var(--primary-color);
 }

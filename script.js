@@ -1,59 +1,18 @@
-// script.js
-
-// const BASE_URL = 'https://api.siliconflow.cn/v1/chat/completions';
-// const MODEL = 'deepseek-ai/DeepSeek-V3';
-// const USER_KEY = '';
-
-// 难度级别映射
-const difficulty_map = {
-    "B": "初中到高中级，涵盖基础日常生活和简单学习场景，示例单词:apple, book, run, happy, school.",
-    "A": "高考英语级，日常生活和基础学术词汇，示例单词:analyze, debate, environment, manage, strategy.",
-    "S": "高考到大学四级，涉及更广泛的日常和基础学术话题。示例单词:philosophy, economy, innovate, perspective, diverse.",
-    "SS": "高考到大学六级，包含更多学术和专业词汇，最高能够阅读新闻、文学作品和中级学术材料，示例单词:metaphor, hypothesis, bureaucracy, paradox, renaissance.",
-    "SSS": "高考到托福6.5分级，涵盖常用学术和书面词汇，能够初步阅读科学文献，示例单词: paradigm, synthesis, epistemology, ontology, heuristic."
-};
+// script.js - 核心功能和初始化
 
 // 用户设置
 let userSettings = {
-    phoneticType: 'uk', // 'uk'为英式音标，'us'为美式音标
+    phoneticType: 'us', // 'uk'为英式音标，'us'为美式音标
     friendNumber: 5,    // 联想词数量
     difficulty: 'A'     // 默认难度级别
 };
 
-// 流式处理
-let isStreaming = false;
-const decoder = new TextDecoder();
-
-// 添加全局变量
-let currentReader = null;
-
-// 默认配置
-const DEFAULT_CONFIG = {
-    baseUrl: 'https://api.siliconflow.cn/v1/chat/completions',
-    model: 'deepseek-ai/DeepSeek-V3',
-    apiKey: ''
-};
-
-// 获取当前配置
-function getCurrentConfig() {
-    const savedConfig = localStorage.getItem('wordnfriends_api_config');
-    if (savedConfig) {
-        try {
-            return JSON.parse(savedConfig);
-        } catch (e) {
-            console.error('解析配置失败:', e);
-        }
-    }
-    return DEFAULT_CONFIG;
-}
-
 // 设置页脚文字
 function setFooterText() {
-    const config = getCurrentConfig();
-    const modelName = config.model.split('/').pop(); // 获取最后一段
+    const config = ConfigManager.getCurrentConfig();
     const footerElement = document.querySelector('.footer div');
     if (footerElement) {
-        footerElement.textContent = `由 ${modelName} 强力驱动`;
+        footerElement.textContent = `由 ${config.name} 强力驱动`;
     }
 }
 
@@ -80,13 +39,13 @@ function initControlPanel() {
     const phoneticTypeText = document.getElementById('phoneticType');
     
     // 设置初始状态
-    phoneticToggle.checked = userSettings.phoneticType === 'us';
-    phoneticTypeText.textContent = phoneticToggle.checked ? '美' : '英';
+    phoneticToggle.checked = userSettings.phoneticType === 'uk';
+    phoneticTypeText.textContent = phoneticToggle.checked ? '英' : '美';
     
     // 监听切换事件
     phoneticToggle.addEventListener('change', function() {
-        userSettings.phoneticType = this.checked ? 'us' : 'uk';
-        phoneticTypeText.textContent = this.checked ? '美' : '英';
+        userSettings.phoneticType = this.checked ? 'uk' : 'us';
+        phoneticTypeText.textContent = this.checked ? '英' : '美';
         saveUserSettings();
     });
     
@@ -109,7 +68,7 @@ function initControlPanel() {
     const difficultySelect = document.getElementById('difficultyLevel');
     
     // 确保有默认难度值
-    if (!userSettings.difficulty || !difficulty_map[userSettings.difficulty]) {
+    if (!userSettings.difficulty || !WordService.difficultyMap[userSettings.difficulty]) {
         userSettings.difficulty = 'A'; // 使用A级作为默认难度
         saveUserSettings(); // 保存设置
     }
@@ -137,71 +96,173 @@ function initResultControls() {
     const controls = resultDiv.querySelector('.result-controls');
     const stopButton = controls.querySelector('.stop-button');
     const resetButton = controls.querySelector('.reset-button');
-    const contentDiv = resultDiv.querySelector('.result-content');
 
     // 终止按钮点击事件
     stopButton.addEventListener('click', async () => {
-        if (currentReader) {
-            await currentReader.cancel();
-            currentReader = null;
-            isStreaming = false;
-            stopButton.style.display = 'none';
-            if (contentDiv.textContent.trim()) {
-                resetButton.style.display = 'inline-block';
-            }
+        await WordService.cancelQuery();
+        stopButton.style.display = 'none';
+        const contentDiv = resultDiv.querySelector('.result-content');
+        if (contentDiv.querySelector('.word-result')) {
+            resetButton.style.display = 'inline-block';
         }
     });
 
     // 重置按钮点击事件
     resetButton.addEventListener('click', () => {
-        contentDiv.innerHTML = '';
-        controls.style.display = 'none';
-        resetButton.style.display = 'none';
+        WordService.resetResult();
     });
+
+    // 加载每日一句
+    QuoteFetcher.showDaily();
 }
 
 // 初始化配置面板
 function initConfigPanel() {
     const configBtn = document.querySelector('.advanced-config-btn');
     const configPanel = document.querySelector('.config-panel');
+    
+    // 配置选择下拉菜单
+    const configSelect = document.getElementById('configSelect');
     const apiKeyInput = document.getElementById('apiKey');
     const baseUrlInput = document.getElementById('baseUrl');
     const modelNameInput = document.getElementById('modelName');
+    const configNameInput = document.getElementById('configName');
+    
     const saveBtn = configPanel.querySelector('.save-config');
-    const resetBtn = configPanel.querySelector('.reset-config');
-
-    // 加载已保存的配置
-    const currentConfig = getCurrentConfig();
-    apiKeyInput.value = currentConfig.apiKey || '';
-    baseUrlInput.value = currentConfig.baseUrl || DEFAULT_CONFIG.baseUrl;
-    modelNameInput.value = currentConfig.model || DEFAULT_CONFIG.model;
-
+    const deleteBtn = configPanel.querySelector('.delete-config');
+    const addNewBtn = configPanel.querySelector('.add-new-config');
+    
+    // 刷新配置列表
+    function updateConfigList() {
+        // 清空当前配置列表
+        configSelect.innerHTML = '';
+        
+        // 获取所有配置
+        const allConfigs = ConfigManager.getAllConfigs();
+        const currentConfig = ConfigManager.getCurrentConfig();
+        
+        // 添加配置到下拉菜单
+        allConfigs.forEach(config => {
+            const option = document.createElement('option');
+            option.value = config.id;
+            option.textContent = `${config.name} (${config.model.split('/').pop()})`;
+            if (config.isUserConfig) {
+                option.textContent += ' 📝';  // 标记用户配置
+            }
+            if (config.id === currentConfig.id) {
+                option.selected = true;
+            }
+            configSelect.appendChild(option);
+        });
+    }
+    
+    // 显示选定的配置详情
+    function showConfigDetails(configId) {
+        const config = ConfigManager.getAllConfigs().find(c => c.id === configId);
+        if (!config) return;
+        
+        apiKeyInput.value = config.apiKey || '';
+        baseUrlInput.value = config.baseUrl || '';
+        modelNameInput.value = config.model || '';
+        configNameInput.value = config.name || '';
+        
+        // 设置编辑状态和按钮可见性
+        const isUserConfig = config.isUserConfig === true;
+        configNameInput.disabled = !isUserConfig;
+        deleteBtn.style.display = isUserConfig ? 'inline-block' : 'none';
+    }
+    
+    // 加载初始配置
+    updateConfigList();
+    showConfigDetails(ConfigManager.getCurrentConfig().id);
+    
     // 显示/隐藏配置面板
     configBtn.addEventListener('click', () => {
         configPanel.classList.toggle('show');
     });
-
+    
+    // 监听配置选择变化
+    configSelect.addEventListener('change', () => {
+        const selectedConfigId = configSelect.value;
+        showConfigDetails(selectedConfigId);
+    });
+    
     // 保存配置
     saveBtn.addEventListener('click', () => {
-        const newConfig = {
-            apiKey: apiKeyInput.value.trim(),
-            baseUrl: baseUrlInput.value.trim() || DEFAULT_CONFIG.baseUrl,
-            model: modelNameInput.value.trim() || DEFAULT_CONFIG.model
-        };
-        localStorage.setItem('wordnfriends_api_config', JSON.stringify(newConfig));
-        configPanel.classList.remove('show');
-        setFooterText();
-        alert('配置已保存');
+        const selectedConfigId = configSelect.value;
+        const selectedConfig = ConfigManager.getAllConfigs().find(c => c.id === selectedConfigId);
+        
+        if (selectedConfig) {
+            // 更新现有配置
+            if (selectedConfig.isUserConfig) {
+                // 用户配置可完全修改
+                const updatedConfig = {
+                    ...selectedConfig,
+                    name: configNameInput.value.trim(),
+                    apiKey: apiKeyInput.value.trim(),
+                    baseUrl: baseUrlInput.value.trim(),
+                    model: modelNameInput.value.trim()
+                };
+                ConfigManager.saveUserConfig(updatedConfig);
+            } else {
+                // 创建用户配置版本
+                const newConfig = ConfigManager.createUserConfig(
+                    `${configNameInput.value.trim()} (自定义)`,
+                    baseUrlInput.value.trim(),
+                    modelNameInput.value.trim(),
+                    apiKeyInput.value.trim()
+                );
+                ConfigManager.setCurrentConfig(newConfig.id);
+            }
+            
+            updateConfigList();
+            setFooterText();
+            showToast('配置已保存', 'success');
+        }
     });
-
-    // 重置配置
-    resetBtn.addEventListener('click', () => {
-        apiKeyInput.value = '';
-        baseUrlInput.value = DEFAULT_CONFIG.baseUrl;
-        modelNameInput.value = DEFAULT_CONFIG.model;
-        localStorage.removeItem('wordnfriends_api_config');
+    
+    // 添加新配置
+    addNewBtn.addEventListener('click', () => {
+        const newName = '新配置';
+        const newConfig = ConfigManager.createUserConfig(
+            newName,
+            baseUrlInput.value.trim() || 'https://api.example.com/v1/chat/completions',
+            modelNameInput.value.trim() || 'model/example',
+            ''
+        );
+        
+        ConfigManager.setCurrentConfig(newConfig.id);
+        updateConfigList();
+        showConfigDetails(newConfig.id);
+    });
+    
+    // 删除配置
+    deleteBtn.addEventListener('click', () => {
+        const selectedConfigId = configSelect.value;
+        const selectedConfig = ConfigManager.getAllConfigs().find(c => c.id === selectedConfigId);
+        
+        if (selectedConfig && selectedConfig.isUserConfig) {
+            if (confirm(`确定要删除配置 "${selectedConfig.name}" 吗？`)) {
+                ConfigManager.deleteUserConfig(selectedConfigId);
+                
+                // 重新选择默认配置
+                const defaultConfig = ConfigManager.getAllConfigs().find(c => c.isDefault);
+                ConfigManager.setCurrentConfig(defaultConfig.id);
+                
+                updateConfigList();
+                showConfigDetails(defaultConfig.id);
+                showToast('配置已删除', 'info');
+            }
+        }
+    });
+    
+    // 设为当前使用的配置
+    const setCurrentBtn = configPanel.querySelector('.set-current-config');
+    setCurrentBtn.addEventListener('click', () => {
+        const selectedConfigId = configSelect.value;
+        ConfigManager.setCurrentConfig(selectedConfigId);
         setFooterText();
-        alert('已恢复默认配置');
+        showToast('已设置为当前使用的配置', 'success');
     });
 }
 
@@ -223,185 +284,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         closeButton.addEventListener('click', function() {
-            modal.classList.remove('show');
+            closeModal();
         });
         
         // 点击弹窗外部关闭
         window.addEventListener('click', function(event) {
             if (event.target === modal) {
-                modal.classList.remove('show');
+                closeModal();
             }
         });
     }
-});
 
-marked.setOptions({
-    gfm: true,
-    tables: true
-});
-
-function process(magic) {
-    if (magic === '') {
-        return 'sk-'+atob('Z3pqanF3Y251dG1sZXB6eGlvYXhvdmx3emZ4bmpjeHNiYWF5ZGdyY3Fyc2xydXp3');
-    } else {
-        return magic;
-    }
-}
-
-function sanitizeInput(input) {
-    let ret = input.trim()
-        .substring(0, 26)
-        .replace(/[^a-zA-Z\u4e00-\u9fa5\-]/g, '');
-    // 如果不同，向控制台打印
-    if (ret !== input) {
-        console.log('输入包含非法字符，已过滤:', input, '->', ret);
-    }
-    return ret;
-}
-
-async function get_system_prompt() {
-    try {
-        const response = await fetch('./system');
-        let systemPrompt = await response.text();
-        
-        // 替换参数
-        systemPrompt = systemPrompt.replace('{{phonetic_type}}', userSettings.phoneticType);
-        systemPrompt = systemPrompt.replace('{{friend_number}}', userSettings.friendNumber);
-        systemPrompt = systemPrompt.replace('{{difficulty_range}}', difficulty_map[userSettings.difficulty] || difficulty_map['A']);
-        
-        return systemPrompt;
-    } catch (error) {
-        console.error(error);
-        return "输出用户给你的单词的翻译（英汉互译）。任何情况下输出长度不允许超过30个字符。并且在回复的开头加上“服务异常\n”";
-    }
-}
-
-// 流式数据处理器
-async function handleStream(reader, resultDiv) {
-    const controls = resultDiv.querySelector('.result-controls');
-    const stopButton = controls.querySelector('.stop-button');
-    const resetButton = controls.querySelector('.reset-button');
-    const contentDiv = resultDiv.querySelector('.result-content');
-    
-    currentReader = reader;
-    controls.style.display = 'block';
-    stopButton.style.display = 'inline-block';
-    resetButton.style.display = 'none';
-    
-    let mdContent = '';
-    
-    try {
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                isStreaming = false;
-                stopButton.style.display = 'none';
-                resetButton.style.display = 'inline-block';
-                currentReader = null;
-                return;
-            }
-
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n').filter(line => {
-                return line.startsWith('data: ') && !line.includes('[DONE]');
-            });
-            
-            lines.forEach(line => {
-                try {
-                    const data = JSON.parse(line.slice(6));
-                    if (data.choices[0].delta.content) {
-                        mdContent += data.choices[0].delta.content;
-                        if (typeof marked !== 'undefined') {
-                            contentDiv.innerHTML = marked.parse(mdContent);
-                        } else {
-                            contentDiv.textContent = mdContent;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('解析流数据失败:', e);
-                }
-            });
-        }
-    } catch (err) {
-        if (err.name === 'AbortError') {
-            console.log('Stream was canceled');
-        } else {
-            throw err;
-        }
-    }
-}
-
-async function getWordInfo() {
-    if (isStreaming) {
-        alert('已有请求在处理中');
-        return;
-    }
-
-    const lastRequest = localStorage.getItem('lastRequest') || 0;
-    if (Date.now() - lastRequest < 3000) {
-        alert('操作过于频繁，请稍后再试');
-        return;
-    }
-    localStorage.setItem('lastRequest', Date.now());
-
-    let word = sanitizeInput(document.getElementById('wordInput').value);
-    document.getElementById('wordInput').value = word;
-    // 在请求前打印关键数据
-    const config = getCurrentConfig();
-    console.log('请求数据:', {
-        baseUrl: config.baseUrl,
-        model: config.model,
-        apiKey: config.apiKey ? 'User Config' : 'Null',
-        word: word,
-        friendNumber: userSettings.friendNumber,
-        phoneticType: userSettings.phoneticType,
-        difficulty: userSettings.difficulty + ' (' + difficulty_map[userSettings.difficulty] + ')'
+    // 设置Markdown渲染选项
+    marked.setOptions({
+        gfm: true,
+        tables: true
     });
-
-    const resultDiv = document.getElementById('result');
-    const contentDiv = resultDiv.querySelector('.result-content');
-    contentDiv.innerHTML = '<div class="loader"></div>';
-    isStreaming = true;
-
-    try {
-        const [magicRes, systemPrompt] = await Promise.all([
-            config.apiKey,
-            get_system_prompt()
-        ]);
-
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process(magicRes)}`
-        };
-
-        const response = await fetch(config.baseUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                model: config.model,
-                stream: true,
-                max_tokens: 200 + userSettings.friendNumber * 100, // 限制token数
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: word }
-                ]
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || 'API请求失败');
-        }
-
-        isStreaming = true;
-        await handleStream(response.body.getReader(), document.getElementById('result'));
-
-    } catch (error) {
-        console.error('请求失败:', error);
-        document.getElementById('result').innerHTML = `错误：${error.message}`;
-        isStreaming = false;
-    }
-}
+});
 
 // 获取 modal 元素
 const modal = document.getElementById('appreciationModal');
@@ -432,4 +331,41 @@ function closeModal() {
     setTimeout(() => {
         modal.style.display = 'none';
     }, 300); // 与 CSS transition 时间相匹配
+}
+
+// 添加自动消失的提示功能
+function showToast(message, type = 'info', duration = 3000) {
+    // 确保有容器
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    
+    // 创建Toast元素
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    // 添加到容器
+    container.appendChild(toast);
+    
+    // 显示Toast
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // 设置自动消失
+    setTimeout(() => {
+        toast.classList.remove('show');
+        // 动画结束后移除元素
+        setTimeout(() => {
+            container.removeChild(toast);
+            // 如果没有更多toast，移除容器
+            if (container.children.length === 0) {
+                document.body.removeChild(container);
+            }
+        }, 300);
+    }, duration);
 }

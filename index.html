@@ -5,12 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Word'n'Friend~</title>
     <script src="./marked.min.js"></script>
+    <!-- 先加载默认配置 -->
+    <script src="./defaultConfigs.js"></script>
+    <!-- 然后加载配置管理器 -->
+    <script src="./configs.js"></script>
+    <script src="./quoteFetcher.js"></script>
+    <script src="./wordService.js"></script>
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
     <div class="header">
         <h2 class="main-header">Word'n'Friends~</h2>
-        <em>AI单词扩展学习助手</em>
+        <em>单词扩展学习AI助手</em>
     </div>
 
     <div class="control-panel">
@@ -44,8 +50,8 @@
     </div>
 
     <div class="input-group">
-        <input type="text" id="wordInput" placeholder="输入中/英文单词" onkeydown="if(event.key === 'Enter') getWordInfo()">
-        <button onclick="getWordInfo()">扩词</button>
+        <input type="text" id="wordInput" placeholder="输入中/英文单词" onkeydown="if(event.key === 'Enter') getWordFriends()">
+        <button onclick="getWordFriends()">扩词</button>
     </div>
     
     <div id="result">
@@ -59,24 +65,35 @@
     <button class="advanced-config-btn">⚙️配置</button>
     <div class="config-panel">
         <div class="config-item">
+            <label>选择配置</label>
+            <select id="configSelect" class="select-dropdown"></select>
+            <div class="config-actions">
+                <button class="set-current-config">使用此配置</button>
+                <button class="delete-config">删除</button>
+            </div>
+        </div>
+        <div class="config-item">
+            <label>配置名称</label>
+            <input type="text" id="configName" placeholder="配置名称">
+        </div>
+        <div class="config-item">
             <label>API Key</label>
-            <input type="password" id="apiKey" placeholder="填写自定义API Key">
+            <input type="password" id="apiKey" placeholder="填写API Key">
         </div>
         <div class="config-item">
             <label>Base URL</label>
-            <input type="text" id="baseUrl" placeholder="填写自定义接口地址">
+            <input type="text" id="baseUrl" placeholder="填写接口地址">
         </div>
         <div class="config-item">
             <label>Model Name</label>
-            <input type="text" id="modelName" placeholder="填写自定义模型名称">
+            <input type="text" id="modelName" placeholder="填写模型名称">
         </div>
         <div class="config-advice">
-            <!-- 提示用户可以申请SiliconFlow，注册赠送Deepseek模型2000万token -->
             <a href="https://cloud.siliconflow.cn/i/YFdj78Mc" target="_blank" style="color: gray;opacity: 0.7;">没有API Key？申请SiliconFlow，注册赠送Deepseek模型2000万token</a>
         </div>
         <div class="config-actions">
-            <button class="reset-config">恢复默认</button>
-            <button class="save-config">保存配置</button>
+            <button class="add-new-config">添加新配置</button>
+            <button class="save-config">保存修改</button>
         </div>
     </div>
     
@@ -94,6 +111,9 @@
         </div>
     </div>
     
+    <!-- 提示容器 -->
+    <div class="toast-container"></div>
+    
     <script src="script.js"></script>
 </body>
-</html> 
+</html>
