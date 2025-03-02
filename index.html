@@ -48,7 +48,13 @@
         <button onclick="getWordInfo()">扩词</button>
     </div>
     
-    <div id="result"></div>
+    <div id="result">
+        <div class="result-controls">
+            <button class="result-button stop-button" style="display: none;">⏹</button>
+            <button class="result-button reset-button" style="display: none;">♻</button>
+        </div>
+        <div class="result-content"></div>
+    </div>
     
     <div class="footer">
         <span class="appreciation"><img src="./profile_128.png" class="mini-icon" alt="赞赏" title="点击查看赞赏码"></span>
@@ -66,4 +72,4 @@
     
     <script src="script.js"></script>
 </body>
-</html>  
+</html>

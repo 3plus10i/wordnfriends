@@ -23,6 +23,9 @@ let userSettings = {
 let isStreaming = false;
 const decoder = new TextDecoder();
 
+// 添加全局变量
+let currentReader = null;
+
 // 设置页脚文字
 function setFooterText() {
     const modelName = MODEL.split('/').pop(); // 获取最后一段
@@ -106,10 +109,40 @@ function saveUserSettings() {
     localStorage.setItem('wordnfriends_settings', JSON.stringify(userSettings));
 }
 
+// 初始化结果区域控件
+function initResultControls() {
+    const resultDiv = document.getElementById('result');
+    const controls = resultDiv.querySelector('.result-controls');
+    const stopButton = controls.querySelector('.stop-button');
+    const resetButton = controls.querySelector('.reset-button');
+    const contentDiv = resultDiv.querySelector('.result-content');
+
+    // 终止按钮点击事件
+    stopButton.addEventListener('click', async () => {
+        if (currentReader) {
+            await currentReader.cancel();
+            currentReader = null;
+            isStreaming = false;
+            stopButton.style.display = 'none';
+            if (contentDiv.textContent.trim()) {
+                resetButton.style.display = 'inline-block';
+            }
+        }
+    });
+
+    // 重置按钮点击事件
+    resetButton.addEventListener('click', () => {
+        contentDiv.innerHTML = '';
+        controls.style.display = 'none';
+        resetButton.style.display = 'none';
+    });
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     setFooterText();
     initControlPanel();
+    initResultControls();
     
     // 初始化赞赏码弹窗
     const miniIcon = document.querySelector('.mini-icon');
@@ -173,41 +206,56 @@ async function get_system_prompt() {
 
 // 流式数据处理器
 async function handleStream(reader, resultDiv) {
+    const controls = resultDiv.querySelector('.result-controls');
+    const stopButton = controls.querySelector('.stop-button');
+    const resetButton = controls.querySelector('.reset-button');
+    const contentDiv = resultDiv.querySelector('.result-content');
+    
+    currentReader = reader;
+    controls.style.display = 'block';
+    stopButton.style.display = 'inline-block';
+    resetButton.style.display = 'none';
+    
     let mdContent = '';
     
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-            isStreaming = false;
-            return;
-        }
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter(line => {
-            // 过滤有效数据行（根据官方文档格式）
-            return line.startsWith('data: ') && !line.includes('[DONE]');
-        });
-        
-        lines.forEach(line => {
-            try {
-                const data = JSON.parse(line.slice(6)); // 去除"data: "前缀
-                if (data.choices[0].delta.content) {
-                    mdContent += data.choices[0].delta.content;
-                    // 将Markdown渲染为HTML
-                    if (typeof marked !== 'undefined') {
-                        const htmlContent = marked.parse(mdContent); // 
-                        resultDiv.innerHTML = htmlContent;
-                    } else {
-                        // 如果 marked.js 未加载成功，创建pre标签直接显示原始Markdown文本
-                        const pre = document.createElement('pre');
-                        pre.textContent = mdContent;
-                        resultDiv.appendChild(pre);
-                    }
-                }
-            } catch (e) {
-                console.warn('解析流数据失败:', e);
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                isStreaming = false;
+                stopButton.style.display = 'none';
+                resetButton.style.display = 'inline-block';
+                currentReader = null;
+                return;
             }
-        });
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n').filter(line => {
+                return line.startsWith('data: ') && !line.includes('[DONE]');
+            });
+            
+            lines.forEach(line => {
+                try {
+                    const data = JSON.parse(line.slice(6));
+                    if (data.choices[0].delta.content) {
+                        mdContent += data.choices[0].delta.content;
+                        if (typeof marked !== 'undefined') {
+                            contentDiv.innerHTML = marked.parse(mdContent);
+                        } else {
+                            contentDiv.textContent = mdContent;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('解析流数据失败:', e);
+                }
+            });
+        }
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            console.log('Stream was canceled');
+        } else {
+            throw err;
+        }
     }
 }
 
@@ -232,11 +280,12 @@ async function getWordInfo() {
         word: word,
         friendNumber: userSettings.friendNumber,
         phoneticType: userSettings.phoneticType,
-        difficulty: userSettings.difficulty
+        difficulty: userSettings.difficulty + ' (' + difficulty_map[userSettings.difficulty] + ')'
     });
 
     const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = '<div class="loader"></div>'; // 使用新的加载动画
+    const contentDiv = resultDiv.querySelector('.result-content');
+    contentDiv.innerHTML = '<div class="loader"></div>';
     isStreaming = true;
 
     try {
