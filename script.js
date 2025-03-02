@@ -3,10 +3,20 @@ const BASE_URL = 'https://api.siliconflow.cn/v1/chat/completions';
 const MODEL = 'deepseek-ai/DeepSeek-V3';
 const MAX_TOKENS = 500;
 
+// 难度级别映射
+const difficulty_map = {
+    "B": "初中到高中级，涵盖基础日常生活和简单学习场景，示例单词:apple, book, run, happy, school.",
+    "A": "高考英语级，日常生活和基础学术词汇，示例单词:analyze, debate, environment, manage, strategy.",
+    "S": "高考到大学四级，涉及更广泛的日常和基础学术话题。示例单词:philosophy, economy, innovate, perspective, diverse.",
+    "SS": "高考到大学六级，包含更多学术和专业词汇，最高能够阅读新闻、文学作品和中级学术材料，示例单词:metaphor, hypothesis, bureaucracy, paradox, renaissance.",
+    "SSS": "高考到托福6.5分级，涵盖常用学术和书面词汇，能够初步阅读科学文献，示例单词: paradigm, synthesis, epistemology, ontology, heuristic."
+};
+
 // 用户设置
 let userSettings = {
     phoneticType: 'uk', // 'uk'为英式音标，'us'为美式音标
-    friendNumber: 5     // 联想词数量
+    friendNumber: 5,    // 联想词数量
+    difficulty: 'A'     // 默认难度级别
 };
 
 // 流式处理
@@ -27,7 +37,17 @@ function initControlPanel() {
     // 初始化本地存储中的设置
     const savedSettings = localStorage.getItem('wordnfriends_settings');
     if (savedSettings) {
-        userSettings = JSON.parse(savedSettings);
+        try {
+            const parsedSettings = JSON.parse(savedSettings);
+            // 合并设置，确保有默认值
+            userSettings = {
+                ...userSettings,
+                ...parsedSettings
+            };
+        } catch (e) {
+            console.error('解析用户设置失败:', e);
+            // 如果解析失败，使用默认设置
+        }
     }
 
     // 音标切换开关
@@ -59,6 +79,26 @@ function initControlPanel() {
         friendNumberText.textContent = this.value;
         saveUserSettings();
     });
+    
+    // 难度级别下拉菜单
+    const difficultySelect = document.getElementById('difficultyLevel');
+    
+    // 确保有默认难度值
+    if (!userSettings.difficulty || !difficulty_map[userSettings.difficulty]) {
+        userSettings.difficulty = 'A'; // 使用A级作为默认难度
+        saveUserSettings(); // 保存设置
+    }
+    
+    // 设置初始值
+    difficultySelect.value = userSettings.difficulty;
+    
+    // 监听选择事件
+    difficultySelect.addEventListener('change', function() {
+        userSettings.difficulty = this.value;
+        saveUserSettings();
+    });
+    
+    console.log('已初始化设置:', userSettings); // 添加日志便于调试
 }
 
 // 保存用户设置到本地存储
@@ -122,6 +162,7 @@ async function get_system_prompt() {
         // 替换参数
         systemPrompt = systemPrompt.replace('{{phonetic_type}}', userSettings.phoneticType);
         systemPrompt = systemPrompt.replace('{{friend_number}}', userSettings.friendNumber);
+        systemPrompt = systemPrompt.replace('{{difficulty_range}}', difficulty_map[userSettings.difficulty] || difficulty_map['A']);
         
         return systemPrompt;
     } catch (error) {
@@ -190,7 +231,8 @@ async function getWordInfo() {
         model: MODEL,
         word: word,
         friendNumber: userSettings.friendNumber,
-        phoneticType: userSettings.phoneticType
+        phoneticType: userSettings.phoneticType,
+        difficulty: userSettings.difficulty
     });
 
     const resultDiv = document.getElementById('result');
@@ -235,4 +277,35 @@ async function getWordInfo() {
         document.getElementById('result').innerHTML = `错误：${error.message}`;
         isStreaming = false;
     }
+}
+
+// 获取 modal 元素
+const modal = document.getElementById('appreciationModal');
+const closeButton = document.querySelector('.close-button');
+const miniIcon = document.querySelector('.mini-icon');
+
+// 点击小图标显示 modal
+miniIcon.addEventListener('click', () => {
+    modal.style.display = 'block';
+    // 强制重绘
+    modal.offsetHeight;
+    modal.classList.add('show');
+});
+
+// 点击关闭按钮隐藏 modal
+closeButton.addEventListener('click', closeModal);
+
+// 点击 modal 背景关闭
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+        closeModal();
+    }
+});
+
+function closeModal() {
+    modal.classList.remove('show');
+    // 等待动画完成后隐藏
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300); // 与 CSS transition 时间相匹配
 }

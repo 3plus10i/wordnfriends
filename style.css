@@ -33,7 +33,8 @@ body {
     border-bottom: 1px solid var(--light-gray);
 }
 
-h2 {
+.main-header {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
     color: var(--primary-color);
     margin-bottom: 8px;
     font-weight: 600;
@@ -41,6 +42,7 @@ h2 {
 
 .header em {
     font-style: normal;
+    font-size: 12px;
     color: #6c757d;
 }
 
@@ -261,7 +263,7 @@ tr:nth-child(even) {
 .footer {
     margin-top: 40px;
     text-align: center;
-    font-size: 14px;
+    font-size: 12px;
     color: #6c757d;
     padding-top: 16px;
     border-top: 1px solid var(--light-gray);
@@ -314,18 +316,20 @@ tr:nth-child(even) {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    background-color: rgba(0, 0, 0, 0);
+    visibility: hidden;
+    transition: background-color 0.3s ease, visibility 0.3s ease;
 }
 
 .modal.show {
     display: block;
-    opacity: 1;
+    visibility: visible;
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
 .modal-content {
     background-color: white;
+    font-size: 12px;
     margin: 15% auto;
     padding: 20px;
     border-radius: var(--border-radius);
@@ -334,18 +338,20 @@ tr:nth-child(even) {
     width: 90%;      /* 响应式宽度 */
     text-align: center;
     position: relative;
+    opacity: 0;
     transform: translateY(-20px);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .modal.show .modal-content {
+    opacity: 1;
     transform: translateY(0);
 }
 
 .full-image {
     max-width: 100%;
-    max-height: 300px; /* 限制图片高度 */
-    margin-bottom: 64px;
+    max-height: 160px; /* 限制图片高度 */
+    margin-bottom: 16px;
 }
 
 .close-button {
@@ -360,4 +366,65 @@ tr:nth-child(even) {
 
 .close-button:hover {
     color: var(--primary-color);
+}
+
+/* 下拉菜单样式 */
+.select-container {
+    position: relative;
+}
+
+.select-dropdown {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: white;
+    border: 1px solid #ced4da;
+    border-radius: var(--border-radius);
+    padding: 4px 24px 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23212529' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 12px;
+}
+
+.select-dropdown:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+}
+
+.select-dropdown option {
+    padding: 8px;
+}
+
+/* 响应式样式 */
+@media (max-width: 576px) {
+    .input-group {
+        flex-direction: column;
+    }
+    
+    input {
+        width: 100%;
+    }
+    
+    button {
+        width: 100%;
+    }
+    
+    .control-panel {
+        justify-content: space-between;
+    }
+    
+    .control-panel {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .control-item {
+        flex: 1;
+        min-width: 120px;
+        justify-content: flex-start;
+    }
 }

@@ -9,8 +9,8 @@
 </head>
 <body>
     <div class="header">
-        <h2>Word'n'Friends~</h2>
-        <em>AI单词拓展学习助手</em>
+        <h2 class="main-header">Word'n'Friends~</h2>
+        <em>AI单词扩展学习助手</em>
     </div>
 
     <div class="control-panel">
@@ -27,6 +27,18 @@
             <div class="slider-container">
                 <input type="range" min="1" max="10" value="5" class="range-slider" id="friendSlider">
                 <span class="slider-value" id="friendNumber">5</span>
+            </div>
+        </div>
+        <div class="control-item">
+            <span class="control-label">难度</span>
+            <div class="select-container">
+                <select id="difficultyLevel" class="select-dropdown">
+                    <option value="B">B级</option>
+                    <option value="A" selected>A级</option>
+                    <option value="S">S级</option>
+                    <option value="SS">SS级</option>
+                    <option value="SSS">SSS级</option>
+                </select>
             </div>
         </div>
     </div>
@@ -48,9 +60,10 @@
             <span class="close-button">&times;</span>
             <img src="./goodjob.jpg" class="full-image" alt="赞赏码">
             <p>很高兴帮到您，您可以微信扫描二维码为我打赏！</p>
+            <p style="color: gray;opacity: 0.7;">yjy@2024 ctrlyjy@qq.com</p>
         </div>
     </div>
     
     <script src="script.js"></script>
 </body>
-</html>
+</html>  
