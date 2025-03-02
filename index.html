@@ -55,6 +55,30 @@
         </div>
         <div class="result-content"></div>
     </div>
+
+    <button class="advanced-config-btn">⚙️配置</button>
+    <div class="config-panel">
+        <div class="config-item">
+            <label>API Key</label>
+            <input type="password" id="apiKey" placeholder="填写自定义API Key">
+        </div>
+        <div class="config-item">
+            <label>Base URL</label>
+            <input type="text" id="baseUrl" placeholder="填写自定义接口地址">
+        </div>
+        <div class="config-item">
+            <label>Model Name</label>
+            <input type="text" id="modelName" placeholder="填写自定义模型名称">
+        </div>
+        <div class="config-advice">
+            <!-- 提示用户可以申请SiliconFlow，注册赠送Deepseek模型2000万token -->
+            <a href="https://cloud.siliconflow.cn/i/YFdj78Mc" target="_blank" style="color: gray;opacity: 0.7;">没有API Key？申请SiliconFlow，注册赠送Deepseek模型2000万token</a>
+        </div>
+        <div class="config-actions">
+            <button class="reset-config">恢复默认</button>
+            <button class="save-config">保存配置</button>
+        </div>
+    </div>
     
     <div class="footer">
         <span class="appreciation"><img src="./profile_128.png" class="mini-icon" alt="赞赏" title="点击查看赞赏码"></span>
@@ -72,4 +96,4 @@
     
     <script src="script.js"></script>
 </body>
-</html>
+</html> 

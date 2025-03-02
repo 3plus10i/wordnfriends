@@ -1,9 +1,8 @@
 // script.js
 
-const BASE_URL = 'https://api.siliconflow.cn/v1/chat/completions';
-const MODEL = 'deepseek-ai/DeepSeek-V3';
-const USER_KEY = '';
-const MAX_TOKENS = 500;
+// const BASE_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+// const MODEL = 'deepseek-ai/DeepSeek-V3';
+// const USER_KEY = '';
 
 // 难度级别映射
 const difficulty_map = {
@@ -28,9 +27,30 @@ const decoder = new TextDecoder();
 // 添加全局变量
 let currentReader = null;
 
+// 默认配置
+const DEFAULT_CONFIG = {
+    baseUrl: 'https://api.siliconflow.cn/v1/chat/completions',
+    model: 'deepseek-ai/DeepSeek-V3',
+    apiKey: ''
+};
+
+// 获取当前配置
+function getCurrentConfig() {
+    const savedConfig = localStorage.getItem('wordnfriends_api_config');
+    if (savedConfig) {
+        try {
+            return JSON.parse(savedConfig);
+        } catch (e) {
+            console.error('解析配置失败:', e);
+        }
+    }
+    return DEFAULT_CONFIG;
+}
+
 // 设置页脚文字
 function setFooterText() {
-    const modelName = MODEL.split('/').pop(); // 获取最后一段
+    const config = getCurrentConfig();
+    const modelName = config.model.split('/').pop(); // 获取最后一段
     const footerElement = document.querySelector('.footer div');
     if (footerElement) {
         footerElement.textContent = `由 ${modelName} 强力驱动`;
@@ -140,11 +160,57 @@ function initResultControls() {
     });
 }
 
+// 初始化配置面板
+function initConfigPanel() {
+    const configBtn = document.querySelector('.advanced-config-btn');
+    const configPanel = document.querySelector('.config-panel');
+    const apiKeyInput = document.getElementById('apiKey');
+    const baseUrlInput = document.getElementById('baseUrl');
+    const modelNameInput = document.getElementById('modelName');
+    const saveBtn = configPanel.querySelector('.save-config');
+    const resetBtn = configPanel.querySelector('.reset-config');
+
+    // 加载已保存的配置
+    const currentConfig = getCurrentConfig();
+    apiKeyInput.value = currentConfig.apiKey || '';
+    baseUrlInput.value = currentConfig.baseUrl || DEFAULT_CONFIG.baseUrl;
+    modelNameInput.value = currentConfig.model || DEFAULT_CONFIG.model;
+
+    // 显示/隐藏配置面板
+    configBtn.addEventListener('click', () => {
+        configPanel.classList.toggle('show');
+    });
+
+    // 保存配置
+    saveBtn.addEventListener('click', () => {
+        const newConfig = {
+            apiKey: apiKeyInput.value.trim(),
+            baseUrl: baseUrlInput.value.trim() || DEFAULT_CONFIG.baseUrl,
+            model: modelNameInput.value.trim() || DEFAULT_CONFIG.model
+        };
+        localStorage.setItem('wordnfriends_api_config', JSON.stringify(newConfig));
+        configPanel.classList.remove('show');
+        setFooterText();
+        alert('配置已保存');
+    });
+
+    // 重置配置
+    resetBtn.addEventListener('click', () => {
+        apiKeyInput.value = '';
+        baseUrlInput.value = DEFAULT_CONFIG.baseUrl;
+        modelNameInput.value = DEFAULT_CONFIG.model;
+        localStorage.removeItem('wordnfriends_api_config');
+        setFooterText();
+        alert('已恢复默认配置');
+    });
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    setFooterText();
+    initConfigPanel();
     initControlPanel();
     initResultControls();
+    setFooterText();
     
     // 初始化赞赏码弹窗
     const miniIcon = document.querySelector('.mini-icon');
@@ -176,14 +242,10 @@ marked.setOptions({
 
 function process(magic) {
     if (magic === '') {
-        return atob('Z3pqanF3Y251dG1sZXB6eGlvYXhvdmx3emZ4bmpjeHNiYWF5ZGdyY3Fyc2xydXp3');
+        return 'sk-'+atob('Z3pqanF3Y251dG1sZXB6eGlvYXhvdmx3emZ4bmpjeHNiYWF5ZGdyY3Fyc2xydXp3');
     } else {
         return magic;
     }
-}
-
-function get_magic() {
-    return USER_KEY;
 }
 
 function sanitizeInput(input) {
@@ -285,8 +347,11 @@ async function getWordInfo() {
     let word = sanitizeInput(document.getElementById('wordInput').value);
     document.getElementById('wordInput').value = word;
     // 在请求前打印关键数据
+    const config = getCurrentConfig();
     console.log('请求数据:', {
-        model: MODEL,
+        baseUrl: config.baseUrl,
+        model: config.model,
+        apiKey: config.apiKey ? 'User Config' : 'Null',
         word: word,
         friendNumber: userSettings.friendNumber,
         phoneticType: userSettings.phoneticType,
@@ -300,22 +365,22 @@ async function getWordInfo() {
 
     try {
         const [magicRes, systemPrompt] = await Promise.all([
-            get_magic(),
+            config.apiKey,
             get_system_prompt()
         ]);
 
         const headers = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer sk-${process(magicRes)}`
+            'Authorization': `Bearer ${process(magicRes)}`
         };
 
-        const response = await fetch(BASE_URL, {
+        const response = await fetch(config.baseUrl, {
             method: 'POST',
             headers,
             body: JSON.stringify({
-                model: MODEL,
+                model: config.model,
                 stream: true,
-                max_tokens: MAX_TOKENS,
+                max_tokens: userSettings.friendNumber * 50, // 根据联想词数量动态调整token数
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: word }
