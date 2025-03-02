@@ -1,6 +1,8 @@
 // script.js
+
 const BASE_URL = 'https://api.siliconflow.cn/v1/chat/completions';
 const MODEL = 'deepseek-ai/DeepSeek-V3';
+const USER_KEY = '';
 const MAX_TOKENS = 500;
 
 // 难度级别映射
@@ -173,7 +175,15 @@ marked.setOptions({
 });
 
 function process(magic) {
-    return magic;
+    if (magic === '') {
+        return atob('Z3pqanF3Y251dG1sZXB6eGlvYXhvdmx3emZ4bmpjeHNiYWF5ZGdyY3Fyc2xydXp3');
+    } else {
+        return magic;
+    }
+}
+
+function get_magic() {
+    return USER_KEY;
 }
 
 function sanitizeInput(input) {
@@ -290,7 +300,7 @@ async function getWordInfo() {
 
     try {
         const [magicRes, systemPrompt] = await Promise.all([
-            fetch(atob('bWFnaWNjb2Rl')).then(r => r.text()),
+            get_magic(),
             get_system_prompt()
         ]);
 
