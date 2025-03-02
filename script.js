@@ -380,7 +380,7 @@ async function getWordInfo() {
             body: JSON.stringify({
                 model: config.model,
                 stream: true,
-                max_tokens: userSettings.friendNumber * 50, // 根据联想词数量动态调整token数
+                max_tokens: 200 + userSettings.friendNumber * 100, // 限制token数
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: word }
