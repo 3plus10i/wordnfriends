@@ -9,6 +9,7 @@
     <script src="./config.js"></script>
     <script src="./quoteFetcher.js"></script>
     <script src="./wordService.js"></script>
+    <script src="./pronunciationHelper.js"></script>
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -26,6 +27,17 @@
             </label>
             <span class="toggle-text" id="phoneticType">英</span>
         </div>
+        
+        <!-- 新增格式开关控件 -->
+        <div class="control-item">
+            <span class="control-label">格式</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="formatToggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-text" id="formatType">长</span>
+        </div>
+        
         <div class="control-item">
             <span class="control-label">联想数量</span>
             <div class="slider-container">
@@ -66,7 +78,6 @@
             <label>选择配置</label>
             <select id="configSelect" class="select-dropdown"></select>
             <div class="config-actions">
-                <button class="set-current-config">使用此配置</button>
                 <button class="delete-config">删除</button>
             </div>
         </div>

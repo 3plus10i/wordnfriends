@@ -2,9 +2,16 @@
 ; config_key=config_value
 
 [siliconflow]
-name=硅基流动/DeepSeek
+name=(默认)硅基流动/DeepSeek-V3
 baseUrl=https://api.siliconflow.cn/v1/chat/completions
 model=deepseek-ai/DeepSeek-V3
 magic=c2stZ3pqanF3Y251dG1sZXB6eGlvYXhvdmx3emZ4bmpjeHNiYWF5ZGdyY3Fyc2xydXp3
 isDefault=true
+
+[siliconflow1]
+name=(默认)硅基流动/DeepSeek-R1-Distill-Qwen-7B
+baseUrl=https://api.siliconflow.cn/v1/chat/completions
+model=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+magic=c2stZ3pqanF3Y251dG1sZXB6eGlvYXhvdmx3emZ4bmpjeHNiYWF5ZGdyY3Fyc2xydXp3
+isDefault=false
 

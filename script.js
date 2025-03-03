@@ -2,9 +2,10 @@
 
 // 用户设置
 let userSettings = {
-    phoneticType: 'us', // 'uk'为英式音标，'us'为美式音标
-    friendNumber: 5,    // 联想词数量
-    difficulty: 'A'     // 默认难度级别
+    phoneticType: 'us',     // 'uk'为英式音标，'us'为美式音标
+    formatType: 'sentence',    // 'sentence'为例句模式，'table'为表格模式
+    friendNumber: 5,        // 联想词数量
+    difficulty: 'A'         // 默认难度级别
 };
 
 // 设置页脚文字
@@ -12,7 +13,7 @@ function setFooterText() {
     const config = ConfigManager.getCurrentConfig();
     const footerElement = document.querySelector('.footer div');
     if (footerElement) {
-        footerElement.textContent = `由 ${config.name} 强力驱动`;
+        footerElement.textContent = `由 ${config.model.split('/').pop()} 强力驱动`;
     }
 }
 
@@ -34,18 +35,33 @@ function initControlPanel() {
         }
     }
 
-    // 音标切换开关
+    // 音标模式切换开关
     const phoneticToggle = document.getElementById('phoneticToggle');
     const phoneticTypeText = document.getElementById('phoneticType');
     
     // 设置初始状态
-    phoneticToggle.checked = userSettings.phoneticType === 'uk';
-    phoneticTypeText.textContent = phoneticToggle.checked ? '英' : '美';
+    phoneticToggle.checked = userSettings.phoneticType === 'us';
+    phoneticTypeText.textContent = phoneticToggle.checked ? '美' : '英';
     
     // 监听切换事件
     phoneticToggle.addEventListener('change', function() {
-        userSettings.phoneticType = this.checked ? 'uk' : 'us';
-        phoneticTypeText.textContent = this.checked ? '英' : '美';
+        userSettings.phoneticType = this.checked ? 'us' : 'uk';
+        phoneticTypeText.textContent = this.checked ? '美' : '英';
+        saveUserSettings();
+    });
+    
+    // 输出格式切换开关
+    const formatToggle = document.getElementById('formatToggle');
+    const formatTypeText = document.getElementById('formatType');
+    
+    // 设置输出格式初始状态
+    formatToggle.checked = userSettings.formatType === 'sentence';
+    formatTypeText.textContent = formatToggle.checked ? '长' : '短';
+    
+    // 监听切换事件
+    formatToggle.addEventListener('change', function() {
+        userSettings.formatType = this.checked ? 'sentence' : 'table';
+        formatTypeText.textContent = this.checked ? '长' : '短';
         saveUserSettings();
     });
     
@@ -146,7 +162,7 @@ function initConfigPanel() {
         allConfigs.forEach(config => {
             const option = document.createElement('option');
             option.value = config.id;
-            option.textContent = `${config.name} (${config.model.split('/').pop()})`;
+            option.textContent = `${config.name} (${config.model})`;
             if (config.isUserConfig) {
                 option.textContent += ' 📝';  // 标记用户配置
             }
@@ -188,6 +204,13 @@ function initConfigPanel() {
     // 监听配置选择变化
     configSelect.addEventListener('change', () => {
         const selectedConfigId = configSelect.value;
+        
+        // 立即应用选择的配置
+        ConfigManager.setCurrentConfig(selectedConfigId);
+        setFooterText();
+        showToast('已切换到配置：'+ConfigManager.getCurrentConfig().name, 'success');
+        
+        // 显示配置详情
         showConfigDetails(selectedConfigId);
     });
     
@@ -266,14 +289,11 @@ function initConfigPanel() {
         }
     });
     
-    // 设为当前使用的配置
+    // 隐藏不再需要的"使用此配置"按钮
     const setCurrentBtn = configPanel.querySelector('.set-current-config');
-    setCurrentBtn.addEventListener('click', () => {
-        const selectedConfigId = configSelect.value;
-        ConfigManager.setCurrentConfig(selectedConfigId);
-        setFooterText();
-        showToast('已设置为当前使用的配置', 'success');
-    });
+    if (setCurrentBtn) {
+        setCurrentBtn.style.display = 'none';
+    }
 }
 
 // 页面加载完成后初始化
@@ -283,6 +303,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     initResultControls();
     initConfigPanel();
     setFooterText();
+    
+    // 初始化发音助手 - 放在所有其他初始化之后
+    PronunciationHelper.init();
+    
+    // 添加调试功能 - 为F2按键添加手动触发音标处理功能
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'F2') {
+            console.log('F2键触发音标处理');
+            PronunciationHelper.processCurrentPhonetics();
+            event.preventDefault();
+        }
+    });
     
     // 初始化赞赏码弹窗
     const miniIcon = document.querySelector('.mini-icon');

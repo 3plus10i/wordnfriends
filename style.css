@@ -310,6 +310,15 @@ tr:nth-child(even) {
 
 /* 响应式样式 */
 @media (max-width: 576px) {
+    body {
+        padding: 10px;
+    }
+    
+    #result {
+        padding: 16px;
+        margin-top: 16px;
+    }
+    
     .input-group {
         flex-direction: column;
     }
@@ -324,6 +333,20 @@ tr:nth-child(even) {
     
     .control-panel {
         justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .control-item {
+        flex: 1;
+        min-width: 120px;
+        justify-content: flex-start;
+    }
+    
+    /* 表格样式优化 */
+    td, th {
+        padding: 8px;
+        font-size: 14px;
     }
 }
 
@@ -639,6 +662,15 @@ tr:nth-child(even) {
     background-color: rgba(220, 53, 69, 0.05);
 }
 
+/* 信息消息样式 */
+.info-message {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-left: 3px solid #0c5460;
+    padding: 10px;
+    margin: 10px 0;
+}
+
 /* 自动消失的提示框样式 */
 .toast-container {
     position: fixed;
@@ -678,4 +710,20 @@ tr:nth-child(even) {
 
 .toast.info {
     border-left: 4px solid var(--primary-color);
+}
+
+/* 音标样式 */
+.phonetic {
+    cursor: pointer;
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.phonetic:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.phonetic:active {
+    transform: scale(0.98);
 }
