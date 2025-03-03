@@ -133,6 +133,7 @@ function initConfigPanel() {
     const addNewBtn = configPanel.querySelector('.add-new-config');
     
     // 刷新配置列表
+    // 此时应保证默认配置已首次加载
     function updateConfigList() {
         // 清空当前配置列表
         configSelect.innerHTML = '';
@@ -161,7 +162,10 @@ function initConfigPanel() {
         const config = ConfigManager.getAllConfigs().find(c => c.id === configId);
         if (!config) return;
         
-        apiKeyInput.value = config.apiKey || '';
+        // 不显示解码后的密钥，保持编码状态
+        apiKeyInput.value = '';
+        apiKeyInput.placeholder = config.magic ? '密钥已加密存储' : '请输入密钥';
+        
         baseUrlInput.value = config.baseUrl || '';
         modelNameInput.value = config.model || '';
         configNameInput.value = config.name || '';
@@ -199,10 +203,16 @@ function initConfigPanel() {
                 const updatedConfig = {
                     ...selectedConfig,
                     name: configNameInput.value.trim(),
-                    apiKey: apiKeyInput.value.trim(),
                     baseUrl: baseUrlInput.value.trim(),
                     model: modelNameInput.value.trim()
                 };
+                
+                // 仅当输入了新密钥时才更新密钥
+                const newKey = apiKeyInput.value.trim();
+                if (newKey) {
+                    updatedConfig.magicPlaintext = newKey;
+                }
+                
                 ConfigManager.saveUserConfig(updatedConfig);
             } else {
                 // 创建用户配置版本
@@ -228,7 +238,7 @@ function initConfigPanel() {
             newName,
             baseUrlInput.value.trim() || 'https://api.example.com/v1/chat/completions',
             modelNameInput.value.trim() || 'model/example',
-            ''
+            '' // 空字符串
         );
         
         ConfigManager.setCurrentConfig(newConfig.id);
@@ -267,10 +277,11 @@ function initConfigPanel() {
 }
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
-    initConfigPanel();
+document.addEventListener('DOMContentLoaded', async function() {
+    await ConfigManager.init();
     initControlPanel();
     initResultControls();
+    initConfigPanel();
     setFooterText();
     
     // 初始化赞赏码弹窗

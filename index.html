@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Word'n'Friend~</title>
     <script src="./marked.min.js"></script>
-    <!-- 先加载默认配置 -->
-    <script src="./defaultConfigs.js"></script>
-    <!-- 然后加载配置管理器 -->
-    <script src="./configs.js"></script>
+    <!-- 加载服务 -->
+    <script src="./config.js"></script>
     <script src="./quoteFetcher.js"></script>
     <script src="./wordService.js"></script>
     <link rel="stylesheet" href="./style.css">
@@ -106,14 +104,13 @@
         <div class="modal-content">
             <span class="close-button">&times;</span>
             <img src="./goodjob.jpg" class="full-image" alt="赞赏码">
-            <p>很高兴帮到您，您可以微信扫描二维码为我打赏！</p>
-            <p style="color: gray;opacity: 0.7;">yjy@2024 ctrlyjy@qq.com</p>
+            <p>微信扫码，赞赏作者</p>
+            <p style="color: gray;opacity: 0.7;">yjy@2025  ctrlyjy@qq.com</p>
         </div>
     </div>
-    
     <!-- 提示容器 -->
     <div class="toast-container"></div>
-    
-    <script src="script.js"></script>
+    <!-- 加载主程序 -->
+    <script src="./script.js"></script>
 </body>
 </html>

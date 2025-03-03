@@ -224,10 +224,10 @@ button:hover {
 
 .result-button {
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: 16px;
     background: transparent;
     border: 1px solid;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
     line-height: 1;

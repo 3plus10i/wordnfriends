@@ -1,0 +1,10 @@
+; [config.id]
+; config_key=config_value
+
+[siliconflow]
+name=硅基流动/DeepSeek
+baseUrl=https://api.siliconflow.cn/v1/chat/completions
+model=deepseek-ai/DeepSeek-V3
+magic=c2stZ3pqanF3Y251dG1sZXB6eGlvYXhvdmx3emZ4bmpjeHNiYWF5ZGdyY3Fyc2xydXp3
+isDefault=true
+

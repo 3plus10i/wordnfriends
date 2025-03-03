@@ -33,7 +33,7 @@ const WordService = {
     // 获取系统提示词
     async getSystemPrompt() {
         try {
-            const response = await fetch('./system');
+            const response = await fetch('./system.md');
             let systemPrompt = await response.text();
             
             // 替换参数
@@ -145,7 +145,7 @@ const WordService = {
             provider: config.name,
             baseUrl: config.baseUrl,
             model: config.model,
-            apiKey: config.apiKey ? '已配置' : '未配置',
+            key: config.magic ? '已配置' : '未配置',
             word: word,
             friendNumber: userSettings.friendNumber,
             phoneticType: userSettings.phoneticType,
@@ -172,9 +172,10 @@ const WordService = {
 
         try {
             const systemPrompt = await this.getSystemPrompt();
+            
             const headers = {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${config.apiKey}`
+                'Authorization': `Bearer ${ConfigManager.getDecodedMagic(config)}`
             };
 
             const response = await fetch(config.baseUrl, {
