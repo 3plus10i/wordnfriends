@@ -5,6 +5,7 @@
 
 const ConfigPanelManager = {
     init: function() {
+        this.isCreatingNewConfig = false; // 添加新状态标记
         this.bindEvents();
         this.updateConfigList();
         this.showConfigDetails(document.getElementById('configSelect').value);
@@ -47,38 +48,26 @@ const ConfigPanelManager = {
         
         // 保存配置
         saveBtn.addEventListener('click', () => {
-            const selectedConfigId = configSelect.value;
-            const selectedConfig = ConfigManager.getAllConfigs().find(c => c.id === selectedConfigId);
-            
             // 获取所有输入值
             const nameValue = configNameInput.value.trim();
             const keyValue = apiKeyInput.value.trim();
             const urlValue = baseUrlInput.value.trim();
             const modelValue = modelNameInput.value.trim();
             
-            // 检查是否在新建配置模式
-            const isCreatingNew = addNewBtn.style.display === 'none';
-            
-            // 如果是默认配置，且不是新建模式，则不允许修改
-            if (selectedConfig && !selectedConfig.isUserConfig && !isCreatingNew) {
-                showToast('默认配置不可修改，请创建新配置', 'error');
-                return;
-            }
-            
             // 无论是新建还是修改，都必须填写全部字段
-            if (!nameValue || !urlValue || !modelValue || !keyValue) {
+            if (!nameValue || !urlValue || !modelValue) {
                 showToast('有字段为空，请检查补充', 'error');
                 return;
             }
             
-            // 检查密钥 - 如果是修改现有配置且没填写密钥，使用原密钥；如果是新建配置则必须填写密钥
-            if (!keyValue && isCreatingNew) {
+            // 检查密钥 - 如果是新建配置则必须填写密钥
+            if (!keyValue && this.isCreatingNewConfig) {
                 showToast('API密钥不能为空', 'error');
                 return;
             }
             
             // 处理配置保存逻辑
-            if (isCreatingNew) {
+            if (this.isCreatingNewConfig) {
                 // 创建新配置
                 const newConfig = ConfigManager.createUserConfig(
                     nameValue,
@@ -90,25 +79,39 @@ const ConfigPanelManager = {
                 // 立即应用
                 ConfigManager.setCurrentConfig(newConfig.id);
                 showToast('新配置已创建并应用', 'success');
-            } 
-            else if (selectedConfig && selectedConfig.isUserConfig) {
-                // 修改现有用户配置
-                const updatedConfig = {
-                    ...selectedConfig,
-                    name: nameValue,
-                    baseUrl: urlValue,
-                    model: modelValue
-                };
                 
-                // 如果有输入密钥则更新
-                if (keyValue) {
-                    updatedConfig.magicPlaintext = keyValue;
+                // 重置新建配置状态
+                this.isCreatingNewConfig = false;
+            } 
+            else {
+                const selectedConfigId = configSelect.value;
+                const selectedConfig = ConfigManager.getAllConfigs().find(c => c.id === selectedConfigId);
+                
+                // 如果是默认配置，则不允许修改
+                if (selectedConfig && !selectedConfig.isUserConfig) {
+                    showToast('默认配置不可修改，请创建新配置', 'error');
+                    return;
                 }
                 
-                // 保存并应用
-                ConfigManager.saveUserConfig(updatedConfig);
-                ConfigManager.setCurrentConfig(updatedConfig.id);
-                showToast('配置已更新并应用', 'success');
+                if (selectedConfig && selectedConfig.isUserConfig) {
+                    // 修改现有用户配置
+                    const updatedConfig = {
+                        ...selectedConfig,
+                        name: nameValue,
+                        baseUrl: urlValue,
+                        model: modelValue
+                    };
+                    
+                    // 如果有输入密钥则更新
+                    if (keyValue) {
+                        updatedConfig.magicPlaintext = keyValue;
+                    }
+                    
+                    // 保存并应用
+                    ConfigManager.saveUserConfig(updatedConfig);
+                    ConfigManager.setCurrentConfig(updatedConfig.id);
+                    showToast('配置已更新并应用', 'success');
+                }
             }
             
             // 重新显示"新增配置"按钮
@@ -126,13 +129,18 @@ const ConfigPanelManager = {
         
         // 添加新配置
         addNewBtn.addEventListener('click', () => {
-            const newName = '新配置';
-            const newConfig = ConfigManager.createUserConfig(
-                newName,
-                baseUrlInput.value.trim() || 'https://api.example.com/v1/chat/completions',
-                modelNameInput.value.trim() || 'model/example',
-                '' // 空字符串
-            );
+            // 设置为新建配置模式，但不立即创建配置
+            this.isCreatingNewConfig = true;
+            
+            // 清空并设置默认值
+            configNameInput.value = '新配置';
+            apiKeyInput.value = '';
+            apiKeyInput.placeholder = '请输入API密钥';
+            baseUrlInput.value = 'https://api.example.com/v1/chat/completions';
+            modelNameInput.value = 'model/example';
+            
+            // 取消禁用编辑
+            configNameInput.disabled = false;
             
             // 隐藏"新增配置"按钮
             addNewBtn.style.display = 'none';
@@ -143,13 +151,15 @@ const ConfigPanelManager = {
             const configSelectItem = configSelect.closest('.config-item');
             configSelectItem.style.display = 'none';
             
-            ConfigManager.setCurrentConfig(newConfig.id);
-            this.updateConfigList();
-            this.showConfigDetails(newConfig.id);
+            // 隐藏删除按钮，因为还没有创建配置
+            deleteBtn.style.display = 'none';
         });
         
         // 取消新建配置
         cancelBtn.addEventListener('click', () => {
+            // 重置新建配置状态
+            this.isCreatingNewConfig = false;
+            
             // 重新显示"新增配置"按钮
             addNewBtn.style.display = 'inline-block';
             // 隐藏"取消"按钮
@@ -158,13 +168,6 @@ const ConfigPanelManager = {
             // 重新显示配置选择下拉菜单
             const configSelectItem = configSelect.closest('.config-item');
             configSelectItem.style.display = 'block';
-            
-            // 恢复选择到之前选中的配置
-            const currentConfigId = ConfigManager.getCurrentConfig().id;
-            // 删除刚才创建的临时配置
-            if (currentConfigId.includes('user_新配置_')) {
-                ConfigManager.deleteUserConfig(currentConfigId);
-            }
             
             // 重新加载配置列表
             this.updateConfigList();
