@@ -10,6 +10,8 @@
     <script src="./quoteFetcher.js"></script>
     <script src="./wordService.js"></script>
     <script src="./pronunciationHelper.js"></script>
+    <script src="./modalManager.js"></script>
+    <script src="./configPanelManager.js"></script>
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -86,29 +88,30 @@
             <input type="text" id="configName" placeholder="配置名称">
         </div>
         <div class="config-item">
-            <label>API Key</label>
-            <input type="password" id="apiKey" placeholder="填写API Key">
+            <label>Model Name</label>
+            <input type="text" id="modelName" placeholder="填写模型名称">
         </div>
         <div class="config-item">
             <label>Base URL</label>
             <input type="text" id="baseUrl" placeholder="填写接口地址">
         </div>
         <div class="config-item">
-            <label>Model Name</label>
-            <input type="text" id="modelName" placeholder="填写模型名称">
+            <label>API Key</label>
+            <input type="password" id="apiKey" placeholder="填写API Key">
         </div>
         <div class="config-advice">
             <a href="https://cloud.siliconflow.cn/i/YFdj78Mc" target="_blank" style="color: gray;opacity: 0.7;">没有API Key？申请SiliconFlow，注册赠送Deepseek模型2000万token</a>
         </div>
         <div class="config-actions">
-            <button class="add-new-config">添加新配置</button>
+            <button class="add-new-config">新增配置</button>
+            <button class="cancel-config" style="display: none;">取消</button>
             <button class="save-config">保存修改</button>
         </div>
     </div>
     
     <div class="footer">
-        <span class="appreciation"><img src="./profile_128.png" class="mini-icon" alt="赞赏" title="点击查看赞赏码"></span>
         <div>由 DeepSeek-V3 强力驱动</div>
+        <span class="appreciation"><img src="./profile_128.png" class="mini-icon" alt="赞赏" title="点击查看赞赏码"></span>
     </div>
     <!-- 添加弹出层 -->
     <div id="appreciationModal" class="modal">

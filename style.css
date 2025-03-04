@@ -596,6 +596,17 @@ tr:nth-child(even) {
     color: white;
 }
 
+.config-actions .cancel-config {
+    background: transparent;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+}
+
+.config-actions .cancel-config:hover {
+    background: #6c757d;
+    color: white;
+}
+
 /* 每日一句样式 */
 .result-content blockquote {
     border-left: 4px solid var(--primary-color);

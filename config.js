@@ -85,6 +85,7 @@ const ConfigManager = {
     parseEnvToConfigs: function(envText) {
         const configs = [];
         let currentConfig = null;
+        let usedIds = new Set(); // 追踪已使用的配置ID
         
         // 按行解析
         const lines = envText.split('\n');
@@ -104,9 +105,19 @@ const ConfigManager = {
                 }
                 
                 const configId = line.substring(1, line.length - 1);
+                
+                // 检查ID是否已存在，如果存在则添加后缀
+                let uniqueId = configId;
+                let counter = 1;
+                while (usedIds.has(uniqueId)) {
+                    uniqueId = `${configId}_${counter}`;
+                    counter++;
+                }
+                usedIds.add(uniqueId);
+                
                 currentConfig = {
-                    id: configId,
-                    name: configId, // 默认名称与ID相同
+                    id: uniqueId,
+                    name: configId, // 默认名称与原始ID相同
                     isDefault: false,
                     baseUrl: "",
                     model: "",
@@ -115,11 +126,12 @@ const ConfigManager = {
                 continue;
             }
             
-            // 解析配置项
+            // 解析配置项 - 修复等号处理
             if (currentConfig && line.includes('=')) {
-                const parts = line.split('=');
-                const key = parts[0].trim().toLowerCase();
-                const value = parts.slice(1).join('=').trim();
+                // 只在第一个等号处分割，保留后续的等号
+                const firstEqualPos = line.indexOf('=');
+                const key = line.substring(0, firstEqualPos).trim().toLowerCase();
+                const value = line.substring(firstEqualPos + 1).trim();
                 
                 switch (key) {
                     case 'name':
@@ -145,6 +157,22 @@ const ConfigManager = {
         // 添加最后一个配置
         if (currentConfig) {
             configs.push(currentConfig);
+        }
+        
+        // 确保只有一个默认配置
+        const defaultCount = configs.filter(c => c.isDefault).length;
+        if (defaultCount > 1) {
+            console.warn(`发现多个默认配置(${defaultCount}个)，只保留第一个`);
+            let foundDefault = false;
+            for (let config of configs) {
+                if (config.isDefault) {
+                    if (foundDefault) {
+                        config.isDefault = false;
+                    } else {
+                        foundDefault = true;
+                    }
+                }
+            }
         }
         
         return configs;

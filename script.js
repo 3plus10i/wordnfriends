@@ -8,15 +8,6 @@ let userSettings = {
     difficulty: 'A'         // 默认难度级别
 };
 
-// 设置页脚文字
-function setFooterText() {
-    const config = ConfigManager.getCurrentConfig();
-    const footerElement = document.querySelector('.footer div');
-    if (footerElement) {
-        footerElement.textContent = `由 ${config.model.split('/').pop()} 强力驱动`;
-    }
-}
-
 // 初始化控制面板
 function initControlPanel() {
     // 初始化本地存储中的设置
@@ -115,12 +106,23 @@ function initResultControls() {
 
     // 终止按钮点击事件
     stopButton.addEventListener('click', async () => {
+        // 先取消查询
         await WordService.cancelQuery();
-        stopButton.style.display = 'none';
+        
+        // 立即清除"加载中"状态
         const contentDiv = resultDiv.querySelector('.result-content');
-        if (contentDiv.querySelector('.word-result')) {
+        const wordResult = contentDiv.querySelector('.word-result');
+        if (wordResult && wordResult.querySelector('.loader')) {
+            // 如果仍在加载状态，直接重置到每日一句
+            WordService.resetResult();
+        } else {
+            // 如果已经有内容，显示重置按钮
+            stopButton.style.display = 'none';
             resetButton.style.display = 'inline-block';
         }
+        
+        // 确保状态被重置
+        WordService.isStreaming = false;
     });
 
     // 重置按钮点击事件
@@ -132,177 +134,19 @@ function initResultControls() {
     QuoteFetcher.showDaily();
 }
 
-// 初始化配置面板
-function initConfigPanel() {
-    const configBtn = document.querySelector('.advanced-config-btn');
-    const configPanel = document.querySelector('.config-panel');
-    
-    // 配置选择下拉菜单
-    const configSelect = document.getElementById('configSelect');
-    const apiKeyInput = document.getElementById('apiKey');
-    const baseUrlInput = document.getElementById('baseUrl');
-    const modelNameInput = document.getElementById('modelName');
-    const configNameInput = document.getElementById('configName');
-    
-    const saveBtn = configPanel.querySelector('.save-config');
-    const deleteBtn = configPanel.querySelector('.delete-config');
-    const addNewBtn = configPanel.querySelector('.add-new-config');
-    
-    // 刷新配置列表
-    // 此时应保证默认配置已首次加载
-    function updateConfigList() {
-        // 清空当前配置列表
-        configSelect.innerHTML = '';
-        
-        // 获取所有配置
-        const allConfigs = ConfigManager.getAllConfigs();
-        const currentConfig = ConfigManager.getCurrentConfig();
-        
-        // 添加配置到下拉菜单
-        allConfigs.forEach(config => {
-            const option = document.createElement('option');
-            option.value = config.id;
-            option.textContent = `${config.name} (${config.model})`;
-            if (config.isUserConfig) {
-                option.textContent += ' 📝';  // 标记用户配置
-            }
-            if (config.id === currentConfig.id) {
-                option.selected = true;
-            }
-            configSelect.appendChild(option);
-        });
-    }
-    
-    // 显示选定的配置详情
-    function showConfigDetails(configId) {
-        const config = ConfigManager.getAllConfigs().find(c => c.id === configId);
-        if (!config) return;
-        
-        // 不显示解码后的密钥，保持编码状态
-        apiKeyInput.value = '';
-        apiKeyInput.placeholder = config.magic ? '密钥已加密存储' : '请输入密钥';
-        
-        baseUrlInput.value = config.baseUrl || '';
-        modelNameInput.value = config.model || '';
-        configNameInput.value = config.name || '';
-        
-        // 设置编辑状态和按钮可见性
-        const isUserConfig = config.isUserConfig === true;
-        configNameInput.disabled = !isUserConfig;
-        deleteBtn.style.display = isUserConfig ? 'inline-block' : 'none';
-    }
-    
-    // 加载初始配置
-    updateConfigList();
-    showConfigDetails(ConfigManager.getCurrentConfig().id);
-    
-    // 显示/隐藏配置面板
-    configBtn.addEventListener('click', () => {
-        configPanel.classList.toggle('show');
-    });
-    
-    // 监听配置选择变化
-    configSelect.addEventListener('change', () => {
-        const selectedConfigId = configSelect.value;
-        
-        // 立即应用选择的配置
-        ConfigManager.setCurrentConfig(selectedConfigId);
-        setFooterText();
-        showToast('已切换到配置：'+ConfigManager.getCurrentConfig().name, 'success');
-        
-        // 显示配置详情
-        showConfigDetails(selectedConfigId);
-    });
-    
-    // 保存配置
-    saveBtn.addEventListener('click', () => {
-        const selectedConfigId = configSelect.value;
-        const selectedConfig = ConfigManager.getAllConfigs().find(c => c.id === selectedConfigId);
-        
-        if (selectedConfig) {
-            // 更新现有配置
-            if (selectedConfig.isUserConfig) {
-                // 用户配置可完全修改
-                const updatedConfig = {
-                    ...selectedConfig,
-                    name: configNameInput.value.trim(),
-                    baseUrl: baseUrlInput.value.trim(),
-                    model: modelNameInput.value.trim()
-                };
-                
-                // 仅当输入了新密钥时才更新密钥
-                const newKey = apiKeyInput.value.trim();
-                if (newKey) {
-                    updatedConfig.magicPlaintext = newKey;
-                }
-                
-                ConfigManager.saveUserConfig(updatedConfig);
-            } else {
-                // 创建用户配置版本
-                const newConfig = ConfigManager.createUserConfig(
-                    `${configNameInput.value.trim()} (自定义)`,
-                    baseUrlInput.value.trim(),
-                    modelNameInput.value.trim(),
-                    apiKeyInput.value.trim()
-                );
-                ConfigManager.setCurrentConfig(newConfig.id);
-            }
-            
-            updateConfigList();
-            setFooterText();
-            showToast('配置已保存', 'success');
-        }
-    });
-    
-    // 添加新配置
-    addNewBtn.addEventListener('click', () => {
-        const newName = '新配置';
-        const newConfig = ConfigManager.createUserConfig(
-            newName,
-            baseUrlInput.value.trim() || 'https://api.example.com/v1/chat/completions',
-            modelNameInput.value.trim() || 'model/example',
-            '' // 空字符串
-        );
-        
-        ConfigManager.setCurrentConfig(newConfig.id);
-        updateConfigList();
-        showConfigDetails(newConfig.id);
-    });
-    
-    // 删除配置
-    deleteBtn.addEventListener('click', () => {
-        const selectedConfigId = configSelect.value;
-        const selectedConfig = ConfigManager.getAllConfigs().find(c => c.id === selectedConfigId);
-        
-        if (selectedConfig && selectedConfig.isUserConfig) {
-            if (confirm(`确定要删除配置 "${selectedConfig.name}" 吗？`)) {
-                ConfigManager.deleteUserConfig(selectedConfigId);
-                
-                // 重新选择默认配置
-                const defaultConfig = ConfigManager.getAllConfigs().find(c => c.isDefault);
-                ConfigManager.setCurrentConfig(defaultConfig.id);
-                
-                updateConfigList();
-                showConfigDetails(defaultConfig.id);
-                showToast('配置已删除', 'info');
-            }
-        }
-    });
-    
-    // 隐藏不再需要的"使用此配置"按钮
-    const setCurrentBtn = configPanel.querySelector('.set-current-config');
-    if (setCurrentBtn) {
-        setCurrentBtn.style.display = 'none';
-    }
-}
-
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function() {
     await ConfigManager.init();
     initControlPanel();
     initResultControls();
-    initConfigPanel();
-    setFooterText();
+    
+    // 初始化配置面板管理器
+    ConfigPanelManager.init();
+    ConfigPanelManager.updateConfigList();
+    ConfigPanelManager.updateFooterText();
+    
+    // 初始化模态弹窗管理器
+    ModalManager.init();
     
     // 初始化发音助手 - 放在所有其他初始化之后
     PronunciationHelper.init();
@@ -315,28 +159,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             event.preventDefault();
         }
     });
-    
-    // 初始化赞赏码弹窗
-    const miniIcon = document.querySelector('.mini-icon');
-    const modal = document.getElementById('appreciationModal');
-    const closeButton = document.querySelector('.close-button');
-    
-    if (miniIcon && modal) {
-        miniIcon.addEventListener('click', function() {
-            modal.classList.add('show');
-        });
-        
-        closeButton.addEventListener('click', function() {
-            closeModal();
-        });
-        
-        // 点击弹窗外部关闭
-        window.addEventListener('click', function(event) {
-            if (event.target === modal) {
-                closeModal();
-            }
-        });
-    }
 
     // 设置Markdown渲染选项
     marked.setOptions({
@@ -344,37 +166,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         tables: true
     });
 });
-
-// 获取 modal 元素
-const modal = document.getElementById('appreciationModal');
-const closeButton = document.querySelector('.close-button');
-const miniIcon = document.querySelector('.mini-icon');
-
-// 点击小图标显示 modal
-miniIcon.addEventListener('click', () => {
-    modal.style.display = 'block';
-    // 强制重绘
-    modal.offsetHeight;
-    modal.classList.add('show');
-});
-
-// 点击关闭按钮隐藏 modal
-closeButton.addEventListener('click', closeModal);
-
-// 点击 modal 背景关闭
-modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-        closeModal();
-    }
-});
-
-function closeModal() {
-    modal.classList.remove('show');
-    // 等待动画完成后隐藏
-    setTimeout(() => {
-        modal.style.display = 'none';
-    }, 300); // 与 CSS transition 时间相匹配
-}
 
 // 添加自动消失的提示功能
 function showToast(message, type = 'info', duration = 3000) {

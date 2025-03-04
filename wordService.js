@@ -8,14 +8,16 @@ const WordService = {
     isStreaming: false,
     currentReader: null,
     decoder: new TextDecoder(),
+    abortController: null,  // 用于控制主动取消请求
+    responseTemperature: 0.8,  // 响应温度
     
     // 难度级别映射
     difficultyMap: {
         "B": "初中到高中级，涵盖基础日常生活和简单学习场景，示例单词:apple, book, run, happy, school.",
         "A": "高考英语级，日常生活和基础学术词汇，示例单词:analyze, debate, environment, manage, strategy.",
-        "S": "高考到大学四级，涉及更广泛的日常和基础学术话题。示例单词:philosophy, economy, innovate, perspective, diverse.",
-        "SS": "高考到大学六级，包含更多学术和专业词汇，最高能够阅读新闻、文学作品和中级学术材料，示例单词:metaphor, hypothesis, bureaucracy, paradox, renaissance.",
-        "SSS": "大学四级到托福7分级，涵盖常用学术和书面词汇，能够阅读科学文献，示例单词: paradigm, synthesis, epistemology, ontology, heuristic."
+        "S": "大学四级到六级，涉及广泛的日常生活和基础学术话题。示例单词:philosophy, economy, innovate, perspective, diverse.",
+        "SS": "大学六级到雅思6.5分级，包含更多学术和专业词汇，能够阅读新闻、文学作品和中级学术材料，示例单词:metaphor, hypothesis, bureaucracy, paradox, renaissance.",
+        "SSS": "雅思7分级，涵盖学术和复杂资料词汇，能够阅读科学文献，示例单词: paradigm, synthesis, epistemology, ontology, heuristic."
     },
     
     // 清理输入以防止注入
@@ -88,7 +90,7 @@ const WordService = {
             wordResult.style.display = 'block';
         }
         
-        // 确保显示加载状态
+        // 确保推理模型在思考时页面显示加载状态
         wordResult.innerHTML = '<div class="loader"></div>';
         
         this.currentReader = reader;
@@ -181,10 +183,6 @@ const WordService = {
                                     reasoningBuffer = '';
                                 }
                                 
-                                // // 如果之前在推理状态，输出完整的推理内容
-                                // if (isShowingReasoning && reasoningContent) {
-                                //     console.log('%c完整推理过程: ', 'color: #9c27b0; font-weight: bold;', reasoningContent);
-                                // }
                             }
                             
                             // 使用marked渲染markdown
@@ -229,25 +227,20 @@ const WordService = {
         // 获取并清理用户输入
         let word = this.sanitizeInput(document.getElementById('wordInput').value);
         const isEmptyInput = !document.getElementById('wordInput').value.trim();
-        
         document.getElementById('wordInput').value = word;
         
-        // 在请求前打印关键数据
-        const config = ConfigManager.getCurrentConfig();
-        console.log('请求数据:', {
-            provider: config.name,
-            baseUrl: config.baseUrl,
-            model: config.model,
-            key: config.magic ? '已配置' : '未配置',
-            word: word,
-            systemPromptType: this.getSystemPromptType(isEmptyInput),
-            friendNumber: userSettings.friendNumber,
-            phoneticType: userSettings.phoneticType,
-            difficulty: userSettings.difficulty + ' (' + this.difficultyMap[userSettings.difficulty] + ')'
-        });
+        
 
         const resultDiv = document.getElementById('result');
         const contentDiv = resultDiv.querySelector('.result-content');
+        
+        // 重置控制按钮状态
+        const controls = resultDiv.querySelector('.result-controls');
+        const stopButton = controls.querySelector('.stop-button');
+        const resetButton = controls.querySelector('.reset-button');
+        controls.style.display = 'block';
+        stopButton.style.display = 'inline-block';
+        resetButton.style.display = 'none';
         
         // 隐藏每日一句并准备显示查询结果
         QuoteFetcher.hideQuote();
@@ -267,10 +260,25 @@ const WordService = {
             PronunciationHelper.resetProcessingState();
         }
 
-        this.isStreaming = true;
-        localStorage.setItem('lastRequest', Date.now());
-
+        // 在请求前打印关键数据
+        const config = ConfigManager.getCurrentConfig();
+        console.log('请求数据:', {
+            provider: config.name,
+            baseUrl: config.baseUrl,
+            model: config.model,
+            temperature: this.responseTemperature + (isEmptyInput ? 0.2 : 0),
+            key: config.magic ? '已配置' : '未配置',
+            word: word,
+            systemPromptType: this.getSystemPromptType(isEmptyInput),
+            friendNumber: userSettings.friendNumber,
+            phoneticType: userSettings.phoneticType,
+            difficulty: userSettings.difficulty + ' (' + this.difficultyMap[userSettings.difficulty] + ')'
+        });
         try {
+            // 创建新的AbortController用于此次请求
+            this.abortController = new AbortController();
+            const signal = this.abortController.signal;
+            
             // 获取系统提示，根据输入是否为空决定使用哪个提示
             const systemPrompt = await this.getSystemPrompt(isEmptyInput);
             
@@ -279,13 +287,15 @@ const WordService = {
                 'Authorization': `Bearer ${ConfigManager.getDecodedMagic(config)}`
             };
 
+            // 将signal传递给fetch请求
             const response = await fetch(config.baseUrl, {
                 method: 'POST',
                 headers,
+                signal: signal, // 添加abort信号
                 body: JSON.stringify({
                     model: config.model,
                     stream: true,
-                    temperature: isEmptyInput ? 0.9 : 0.6, // 空输入时使用更高的创意度
+                    temperature: this.responseTemperature + (isEmptyInput ? 0.2 : 0),
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: isEmptyInput ? "空输入" : word }
@@ -301,25 +311,54 @@ const WordService = {
             }
 
             this.isStreaming = true;
+            localStorage.setItem('lastRequest', Date.now());
             await this.handleStream(response.body.getReader(), resultDiv);
 
         } catch (error) {
+            // 如果是取消请求的错误，不显示错误信息
+            if (error.name === 'AbortError') {
+                console.log('请求已被用户取消');
+                return;
+            }
+            
             console.error('请求失败:', error);
             const wordResult = contentDiv.querySelector('.word-result');
             if (wordResult) {
                 wordResult.innerHTML = `<div class="error-message">请求失败（${error.message}）</div>`;
             }
+        } finally {
             this.isStreaming = false;
-            
+            this.abortController = null;
         }
     },
     
     // 取消当前查询
     async cancelQuery() {
+        console.log('取消查询 - 状态:', this.isStreaming ? '正在流式输出' : '非流式状态');
+        
+        // 确保立即复位状态标志
+        this.isStreaming = false;
+        
+        // 取消整个HTTP请求
+        if (this.abortController) {
+            try {
+                console.log('执行请求取消');
+                this.abortController.abort();
+                this.abortController = null;
+            } catch (error) {
+                console.error('取消HTTP请求时出错:', error);
+            }
+        }
+        
+        // 另外尝试取消reader（双重保险）
         if (this.currentReader) {
-            await this.currentReader.cancel();
-            this.currentReader = null;
-            this.isStreaming = false;
+            try {
+                await this.currentReader.cancel();
+            } catch (error) {
+                console.error('取消流读取时出错:', error);
+            } finally {
+                this.currentReader = null;
+            }
         }
     },
     
