@@ -5,10 +5,6 @@
 
 const WordService = {
     // 全局状态
-    isStreaming: false,
-    currentReader: null,
-    decoder: new TextDecoder(),
-    abortController: null,  // 用于控制主动取消请求
     responseTemperature: 0.8,  // 响应温度
     
     // 难度级别映射
@@ -69,151 +65,78 @@ const WordService = {
         }
     },
     
-    // 处理流式数据
-    async handleStream(reader, resultDiv) {
-        const controls = resultDiv.querySelector('.result-controls');
-        const stopButton = controls.querySelector('.stop-button');
-        const resetButton = controls.querySelector('.reset-button');
+    // 处理AI模型返回的内容
+    handleModelResponse(content, reasoning, done, resultDiv) {
         const contentDiv = resultDiv.querySelector('.result-content');
-        
-        // 隐藏每日一句
-        QuoteFetcher.hideQuote();
-        
-        // 创建单词结果容器
         let wordResult = contentDiv.querySelector('.word-result');
+        
+        // 如果没有结果容器，创建一个
         if (!wordResult) {
             wordResult = document.createElement('div');
             wordResult.className = 'word-result';
             contentDiv.appendChild(wordResult);
-        } else {
-            wordResult.innerHTML = '';
-            wordResult.style.display = 'block';
         }
         
-        // 确保推理模型在思考时页面显示加载状态
-        wordResult.innerHTML = '<div class="loader"></div>';
-        
-        this.currentReader = reader;
-        controls.style.display = 'block';
-        stopButton.style.display = 'inline-block';
-        resetButton.style.display = 'none';
-        
-        let mdContent = '';
-        let hasReceivedContent = false;  // 跟踪是否收到过实际内容
-        let reasoningContent = '';       // 存储推理内容
-        let reasoningBuffer = '';        // 用于按句子缓冲推理内容
-        let isShowingReasoning = false;  // 是否正在显示推理内容
-        
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    this.isStreaming = false;
-                    console.log('流式输出完成');
-                    stopButton.style.display = 'none';
-                    resetButton.style.display = 'inline-block';
-                    this.currentReader = null;
-                    
-                    // 如果整个流程中没有收到内容，显示一个友好的消息
-                    if (!hasReceivedContent) {
-                        wordResult.innerHTML = '<div class="info-message">模型没有返回内容，请重试</div>';
-                    }
-                    
-                    // 如果推理结束，输出剩余缓冲区中的内容
-                    if (reasoningBuffer.trim()) {
-                        console.log('%c推理内容: ', 'color: #9c27b0;', reasoningBuffer);
-                    }
-                    
-                    // 通知发音助手流式输出已完成
-                    if (typeof PronunciationHelper !== 'undefined' && PronunciationHelper._initialized) {
-                        PronunciationHelper.handleStreamComplete();
-                    }
-                    
-                    return;
-                }
-
-                const chunk = this.decoder.decode(value);
-                const lines = chunk.split('\n').filter(line => {
-                    return line.startsWith('data: ') && !line.includes('[DONE]');
-                });
-                
-                // 处理每个数据行
-                for (const line of lines) {
-                    try {
-                        const data = JSON.parse(line.slice(6));
-                         
-                        // 检查是否有推理内容
-                        if (data.choices[0].delta && data.choices[0].delta.reasoning_content) {
-                            const reasoning = data.choices[0].delta.reasoning_content;
-                            reasoningContent += reasoning;  // 累计所有推理内容
-                            reasoningBuffer += reasoning;   // 缓冲当前句子
-                            
-                            // 检查是否有句号，如果有则输出累积的内容
-                            if (reasoning.includes('。')) {
-                                // 可能有多个句号，按句号分割并逐一输出
-                                const sentences = reasoningBuffer.split('。');
-                                for (let i = 0; i < sentences.length - 1; i++) {
-                                    if (sentences[i].trim()) {
-                                        // 去掉换行符
-                                        sentences[i] = sentences[i].replace(/\n/g, ' ');
-                                        console.log('%c推理内容: ', 'color: #9c27b0;', sentences[i] + '。');
-                                    }
-                                }
-                                // 保留最后一段（没有句号的部分）
-                                reasoningBuffer = sentences[sentences.length - 1];
-                            }
-                            
-                            // 如果还没有实际内容，标记为正在推理
-                            if (!hasReceivedContent) {
-                                isShowingReasoning = true;
-                            }
-                        }
-                        
-                        // 检查是否有实际内容
-                        if (data.choices[0].delta && data.choices[0].delta.content) {
-                            mdContent += data.choices[0].delta.content;
-                            
-                            // 标记已收到内容
-                            if (!hasReceivedContent) {
-                                hasReceivedContent = true;
-                                
-                                // 如果有未输出的推理内容，现在输出
-                                if (reasoningBuffer.trim()) {
-                                    console.log('%c推理内容: ', 'color: #9c27b0;', reasoningBuffer);
-                                    reasoningBuffer = '';
-                                }
-                                
-                            }
-                            
-                            // 使用marked渲染markdown
-                            if (typeof marked !== 'undefined') {
-                                wordResult.innerHTML = marked.parse(mdContent);
-                            } else {
-                                wordResult.textContent = mdContent;
-                            }
-                        }
-                        
-                    } catch (e) {
-                        console.warn('解析流数据失败:', e, line);
-                    }
-                }
+        // 完成时处理
+        if (done) {
+            const controls = resultDiv.querySelector('.result-controls');
+            const stopButton = controls.querySelector('.stop-button');
+            const resetButton = controls.querySelector('.reset-button');
+            
+            stopButton.style.display = 'none';
+            resetButton.style.display = 'inline-block';
+            
+            // 如果没有内容，显示友好消息
+            if (!content.trim()) {
+                wordResult.innerHTML = '<div class="info-message">模型没有返回内容，请重试</div>';
             }
-        } catch (err) {
-            if (err.name === 'AbortError') {
-                console.log('Stream was canceled');
-            } else {
-                // 如果有未输出的推理内容，现在输出
-                if (reasoningBuffer.trim()) {
-                    console.log('%c推理内容(中断): ', 'color: #9c27b0;', reasoningBuffer);
-                }
-                throw err;
+            
+            // 通知发音助手流式输出已完成
+            if (typeof PronunciationHelper !== 'undefined' && PronunciationHelper._initialized) {
+                PronunciationHelper.handleStreamComplete();
             }
+            
+            return;
         }
+        
+        // 使用marked渲染markdown内容
+        if (typeof marked !== 'undefined' && content) {
+            wordResult.innerHTML = marked.parse(content);
+        } else if (content) {
+            wordResult.textContent = content;
+        } else if (!wordResult.innerHTML) {
+            // 如果没有内容，显示加载状态
+            wordResult.innerHTML = '<div class="loader"></div>';
+        }
+    },
+    
+    // 处理API错误
+    handleModelError(error, resultDiv) {
+        console.error('AI模型请求失败:', error);
+        
+        const contentDiv = resultDiv.querySelector('.result-content');
+        let wordResult = contentDiv.querySelector('.word-result');
+        
+        if (!wordResult) {
+            wordResult = document.createElement('div');
+            wordResult.className = 'word-result';
+            contentDiv.appendChild(wordResult);
+        }
+        
+        wordResult.innerHTML = `<div class="error-message">请求失败（${error.message || '未知错误'}）</div>`;
+        
+        // 更新控制按钮
+        const controls = resultDiv.querySelector('.result-controls');
+        const stopButton = controls.querySelector('.stop-button');
+        const resetButton = controls.querySelector('.reset-button');
+        
+        stopButton.style.display = 'none';
+        resetButton.style.display = 'inline-block';
     },
     
     // 主查询函数
     async queryWord() {
-        if (this.isStreaming) {
+        if (AIModelService.isProcessing()) {
             showToast('已有请求在处理中', 'error');
             return;
         }
@@ -228,8 +151,6 @@ const WordService = {
         let word = this.sanitizeInput(document.getElementById('wordInput').value);
         const isEmptyInput = !document.getElementById('wordInput').value.trim();
         document.getElementById('wordInput').value = word;
-        
-        
 
         const resultDiv = document.getElementById('result');
         const contentDiv = resultDiv.querySelector('.result-content');
@@ -260,105 +181,48 @@ const WordService = {
             PronunciationHelper.resetProcessingState();
         }
 
-        // 在请求前打印关键数据
-        const config = ConfigManager.getCurrentConfig();
-        console.log('请求数据:', {
-            provider: config.name,
-            baseUrl: config.baseUrl,
-            model: config.model,
-            temperature: this.responseTemperature + (isEmptyInput ? 0.2 : 0),
-            key: config.magic ? '已配置' : '未配置',
-            word: word,
-            systemPromptType: this.getSystemPromptType(isEmptyInput),
-            friendNumber: userSettings.friendNumber,
-            phoneticType: userSettings.phoneticType,
-            difficulty: userSettings.difficulty + ' (' + this.difficultyMap[userSettings.difficulty] + ')'
-        });
         try {
-            // 创建新的AbortController用于此次请求
-            this.abortController = new AbortController();
-            const signal = this.abortController.signal;
-            
             // 获取系统提示，根据输入是否为空决定使用哪个提示
             const systemPrompt = await this.getSystemPrompt(isEmptyInput);
+            const config = ConfigManager.getCurrentConfig();
             
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${ConfigManager.getDecodedMagic(config)}`
-            };
-
-            // 将signal传递给fetch请求
-            const response = await fetch(config.baseUrl, {
-                method: 'POST',
-                headers,
-                signal: signal, // 添加abort信号
-                body: JSON.stringify({
-                    model: config.model,
-                    stream: true,
-                    temperature: this.responseTemperature + (isEmptyInput ? 0.2 : 0),
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: isEmptyInput ? "空输入" : word }
-                    ]
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                // 直接打印错误信息
-                console.error('API请求失败:', errorData);
-                throw new Error(errorData.error?.message || 'API请求失败');
-            }
-
-            this.isStreaming = true;
+            // 计算使用的温度
+            const temperature = this.responseTemperature + (isEmptyInput ? 0.2 : 0);
+            
+            // 记录最后请求时间
             localStorage.setItem('lastRequest', Date.now());
-            await this.handleStream(response.body.getReader(), resultDiv);
+            
+            // 调用AI模型服务
+            await AIModelService.callModel(
+                config,
+                systemPrompt,
+                isEmptyInput ? "空输入" : word,
+                temperature,
+                (content, reasoning, done) => this.handleModelResponse(content, reasoning, done, resultDiv),
+                (error) => this.handleModelError(error, resultDiv)
+            );
 
         } catch (error) {
-            // 如果是取消请求的错误，不显示错误信息
-            if (error.name === 'AbortError') {
-                console.log('请求已被用户取消');
-                return;
-            }
-            
-            console.error('请求失败:', error);
-            const wordResult = contentDiv.querySelector('.word-result');
-            if (wordResult) {
-                wordResult.innerHTML = `<div class="error-message">请求失败（${error.message}）</div>`;
-            }
-        } finally {
-            this.isStreaming = false;
-            this.abortController = null;
+            // 错误处理已在handleModelError中完成
+            console.error('查询过程中发生错误:', error);
         }
     },
     
     // 取消当前查询
     async cancelQuery() {
-        console.log('取消查询 - 状态:', this.isStreaming ? '正在流式输出' : '非流式状态');
-        
-        // 确保立即复位状态标志
-        this.isStreaming = false;
-        
-        // 取消整个HTTP请求
-        if (this.abortController) {
-            try {
-                console.log('执行请求取消');
-                this.abortController.abort();
-                this.abortController = null;
-            } catch (error) {
-                console.error('取消HTTP请求时出错:', error);
-            }
-        }
-        
-        // 另外尝试取消reader（双重保险）
-        if (this.currentReader) {
-            try {
-                await this.currentReader.cancel();
-            } catch (error) {
-                console.error('取消流读取时出错:', error);
-            } finally {
-                this.currentReader = null;
-            }
+        try {
+            await AIModelService.cancelRequest();
+            
+            const resultDiv = document.getElementById('result');
+            const controls = resultDiv.querySelector('.result-controls');
+            const stopButton = controls.querySelector('.stop-button');
+            const resetButton = controls.querySelector('.reset-button');
+            
+            stopButton.style.display = 'none';
+            resetButton.style.display = 'inline-block';
+            
+        } catch (error) {
+            console.error('取消查询失败:', error);
         }
     },
     

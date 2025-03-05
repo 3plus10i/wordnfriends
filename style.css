@@ -286,16 +286,16 @@ tr:nth-child(even) {
 }
 
 .loader:after {
-    content: "加载中...";
+    content: "少女祈祷中...";
     color: var(--primary-color);
     animation: loadingDots 1.5s infinite;
 }
 
 @keyframes loadingDots {
-    0% { content: "加载中"; }
-    33% { content: "加载中."; }
-    66% { content: "加载中.."; }
-    100% { content: "加载中..."; }
+    0% { content: "少女祈祷中"; }
+    33% { content: "少女祈祷中."; }
+    66% { content: "少女祈祷中.."; }
+    100% { content: "少女祈祷中..."; }
 }
 
 /* 页脚样式 */
