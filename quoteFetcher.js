@@ -130,7 +130,8 @@ const QuoteFetcher = {
                 (error) => {
                     console.error('获取每日一句失败，使用默认值:', error);
                     resolve(this.DEFAULT_QUOTE);
-                }
+                },
+                5000 // 设置超时为2秒
             ).catch(error => {
                 console.error('调用模型时发生错误，使用默认值:', error);
                 resolve(this.DEFAULT_QUOTE);

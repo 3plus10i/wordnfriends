@@ -18,9 +18,10 @@ const AIModelService = {
      * @param {number} temperature - 温度参数(创造性)
      * @param {function} onStream - 流数据回调函数，参数: (content, reasoning, done)
      * @param {function} onError - 错误回调函数
+     * @param {number} [timeout=60000] - 超时时间(毫秒)，默认60秒
      * @returns {Promise} - 完成后的Promise
      */
-    async callModel(config, systemPrompt, userInput, temperature, onStream, onError) {
+    async callModel(config, systemPrompt, userInput, temperature, onStream, onError, timeout = 60000) {
         // 如果已经有请求正在处理，拒绝新请求
         if (this.isStreaming) {
             console.warn('已有请求正在处理中');
@@ -30,7 +31,8 @@ const AIModelService = {
         console.log('开始AI请求:', {
             provider: config.name,
             model: config.model,
-            temperature: temperature
+            temperature: temperature,
+            timeout: timeout
         });
         
         try {
@@ -46,6 +48,17 @@ const AIModelService = {
             this.isStreaming = true;
             console.log('正在发送请求到:', config.baseUrl);
             
+            // 设置超时
+            let timeoutId = null;
+            if (timeout && timeout > 0) {
+                timeoutId = setTimeout(() => {
+                    if (this.abortController) {
+                        console.log(`请求超时(${timeout}ms)，自动取消`);
+                        this.abortController.abort();
+                    }
+                }, timeout);
+            }
+            
             const response = await fetch(config.baseUrl, {
                 method: 'POST',
                 headers,
@@ -60,6 +73,12 @@ const AIModelService = {
                     ]
                 })
             });
+            
+            // 清除超时计时器
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
             
             if (!response.ok) {
                 console.error('API返回错误状态码:', response.status);
@@ -86,10 +105,13 @@ const AIModelService = {
             this.currentReader = null;
             this.abortController = null;
             
-            // 如果是用户主动取消，不视为错误
+            // 如果是用户主动取消或超时，不视为错误
             if (error.name === 'AbortError') {
-                console.log('请求已被用户取消');
-                return Promise.resolve({ canceled: true });
+                console.log('请求已被取消或超时');
+                if (onError) {
+                    onError(new Error('请求超时'));
+                }
+                return Promise.resolve({ canceled: true, timedOut: true });
             }
             
             console.error('API调用失败:', error);
