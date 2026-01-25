@@ -1,0 +1,783 @@
+:root {
+    --primary-color: #4361ee;
+    --accent-color: #3f37c9;
+    --bg-color: #f8f9fa;
+    --text-color: #212529;
+    --light-gray: #e9ecef;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 标题和介绍样式 */
+.header {
+    text-align: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--light-gray);
+}
+
+.main-header {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.header em {
+    font-style: normal;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* 控制面板样式 */
+.control-panel {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 12px;
+    gap: 20px;
+}
+
+.control-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.control-label {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* 开关样式 - 缩小版 */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 18px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .3s;
+    border-radius: 18px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--primary-color);
+}
+
+input:focus + .toggle-slider {
+    box-shadow: 0 0 1px var(--primary-color);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(18px);
+}
+
+.toggle-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+/* 滑动条样式 - 缩小版 */
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.range-slider {
+    /* -webkit-appearance: none; */
+    appearance: none; /* 确保在所有浏览器中一致显示 */
+    width: 80px;
+    height: 4px;
+    border-radius: 3px;  
+    background: #d3d3d3;
+    outline: none;
+    padding: 0; /* 移除可能影响滑动范围的内边距 */
+    margin: 0; /* 移除可能影响滑动范围的外边距 */
+}
+
+.range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%; 
+    background: var(--primary-color);
+    cursor: pointer;
+}
+
+.range-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+}
+
+.slider-value {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary-color);
+    min-width: 16px;
+    text-align: center;
+}
+
+/* 输入区域样式 */
+.input-group {
+    display: flex;
+    margin: 16px 0;
+    gap: 12px;
+}
+
+input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid #ced4da;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    transition: border 0.2s;
+}
+
+input:focus {
+    outline: none;
+    border-color: var (--primary-color);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+
+button {
+    padding: 12px 20px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: var(--accent-color);
+}
+
+/* 结果区域样式 */
+#result {
+    margin-top: 24px;
+    padding: 32px;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    min-height: 100px;
+    position: relative; /* 为背景图定位提供参考 */
+    overflow: hidden; /* 确保背景图不溢出圆角 */
+}
+
+/* 结果控制按钮样式 */
+.result-controls {
+    display: none;
+    margin-bottom: 12px;
+}
+
+.result-button {
+    padding: 4px 8px;
+    border-radius: 16px;
+    background: transparent;
+    border: 1px solid;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.stop-button {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.stop-button:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.reset-button {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.reset-button:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Markdown样式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    overflow-x: auto;
+    display: block;
+}
+
+td, th {
+    border: 1px solid #dee2e6;
+    padding: 12px;
+}
+
+th {
+    background-color: #f1f3f5;
+    font-weight: 600;
+}
+
+tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+/* 加载动画 */
+.loader {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    text-align: center;
+    padding: 24px;
+}
+
+.loader:after {
+    content: "少女祈祷中...";
+    color: var(--primary-color);
+    animation: loadingDots 1.5s infinite;
+}
+
+@keyframes loadingDots {
+    0% { content: "少女祈祷中"; }
+    33% { content: "少女祈祷中."; }
+    66% { content: "少女祈祷中.."; }
+    100% { content: "少女祈祷中..."; }
+}
+
+/* 页脚样式 */
+.footer {
+    margin-top: auto; /* 自动推到底部 */
+    text-align: center;
+    font-size: 12px;
+    color: #6c757d;
+    padding-top: 16px;
+    border-top: 1px solid var(--light-gray);
+}
+
+/* 响应式样式 */
+@media (max-width: 576px) {
+    body {
+        padding: 10px;
+    }
+    
+    #result {
+        padding: 16px;
+        margin-top: 16px;
+    }
+    
+    .input-group {
+        flex-direction: column;
+    }
+    
+    input {
+        width: 100%;
+    }
+    
+    button {
+        width: 100%;
+    }
+    
+    .control-panel {
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .control-item {
+        flex: 1;
+        min-width: 120px;
+        justify-content: flex-start;
+    }
+    
+    /* 表格样式优化 */
+    td, th {
+        padding: 8px;
+        font-size: 14px;
+    }
+}
+
+/* 赞赏图标样式 */
+.mini-icon {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    margin: 0 3px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.mini-icon:hover {
+    transform: scale(1.2);
+}
+
+.appreciation {
+    display: inline-block;
+}
+
+/* 弹出层样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0);
+    visibility: hidden;
+    transition: background-color 0.3s ease, visibility 0.3s ease;
+}
+
+.modal.show {
+    display: block;
+    visibility: visible;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.modal-content {
+    background-color: white;
+    font-size: 12px;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    max-width: 320px; /* 限制最大宽度 */
+    width: 90%;      /* 响应式宽度 */
+    text-align: center;
+    position: relative;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.modal.show .modal-content {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.full-image {
+    max-width: 100%;
+    max-height: 160px; /* 限制图片高度 */
+    margin-bottom: 16px;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.close-button:hover {
+    color: var(--primary-color);
+}
+
+/* 下拉菜单样式 */
+.select-container {
+    position: relative;
+}
+
+.select-dropdown {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: white;
+    border: 1px solid #ced4da;
+    border-radius: var(--border-radius);
+    padding: 4px 24px 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23212529' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 12px;
+}
+
+.select-dropdown:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+}
+
+.select-dropdown option {
+    padding: 8px;
+}
+
+/* 响应式样式 */
+@media (max-width: 576px) {
+    .input-group {
+        flex-direction: column;
+    }
+    
+    input {
+        width: 100%;
+    }
+    
+    button {
+        width: 100%;
+    }
+    
+    .control-panel {
+        justify-content: space-between;
+    }
+    
+    .control-panel {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .control-item {
+        flex: 1;
+        min-width: 120px;
+        justify-content: flex-start;
+    }
+}
+
+/* 高级配置按钮样式 */
+.advanced-config-btn {
+    display: block;
+    width: fit-content;
+    margin: 12px 0;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.advanced-config-btn:hover {
+    background: #6c757d;
+    color: white;
+}
+
+/* 配置面板样式 */
+.config-panel {
+    display: none;
+    margin-top: 12px;
+    padding: 16px;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.config-panel.show {
+    display: block;
+}
+
+.config-item {
+    margin-bottom: 12px;
+}
+
+.config-item label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+.config-item input, 
+.config-item select {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.config-advice {
+    font-size: 10px;
+    color: #6c757d;
+    margin-top: 8px;
+}
+
+.config-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.config-actions button {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.config-actions .reset-config,
+.config-actions .delete-config {
+    background: transparent;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+}
+
+.config-actions .reset-config:hover,
+.config-actions .delete-config:hover {
+    background: #dc3545;
+    color: white;
+}
+
+.config-actions .set-current-config {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.config-actions .set-current-config:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.config-actions .add-new-config {
+    background: transparent;
+    border: 1px solid #28a745;
+    color: #28a745;
+    margin-right: auto; /* 将添加按钮推到左侧 */
+}
+
+.config-actions .add-new-config:hover {
+    background: #28a745;
+    color: white;
+}
+
+.config-actions .cancel-config {
+    background: transparent;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+}
+
+.config-actions .cancel-config:hover {
+    background: #6c757d;
+    color: white;
+}
+
+/* 配置行容器 - 用于包裹select和按钮，使其并排显示 */
+.config-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.config-select-row .select-dropdown {
+    flex: 1;
+    min-width: 0; /* 防止溢出 */
+}
+
+.config-select-row .config-actions {
+    margin-top: 0;
+    flex-shrink: 0;
+}
+
+/* 每日一句样式 */
+.result-content blockquote {
+    border-left: 4px solid var(--primary-color);
+    padding-left: 16px;
+    margin: 16px 0;
+    color: #555;
+    font-style: italic;
+}
+
+.result-content h2 {
+    color: var(--primary-color);
+    margin-bottom: 16px;
+    font-size: 1.5em;
+}
+
+.result-content blockquote em {
+    font-style: normal;
+    font-weight: 500;
+    color: #333;
+    font-size: 1.1em;
+}
+
+/* 每日一句样式 */
+.daily-quote {
+    font-family: Georgia, serif;
+    padding: 10px;
+}
+
+.quote-english {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+    line-height: 1.4;
+}
+
+.quote-chinese {
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: #666;
+}
+
+.quote-source {
+    font-size: 14px;
+    color: #888;
+    text-align: right;
+    font-style: italic;
+}
+
+.quote-source-link {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.daily-quote-loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--primary-color);
+}
+
+/* 单词结果区域 */
+.word-result {
+    min-height: 50px;
+}
+
+.error-message {
+    color: #dc3545;
+    padding: 10px;
+    border-left: 3px solid #dc3545;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* 信息消息样式 */
+.info-message {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-left: 3px solid #0c5460;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+/* 自动消失的提示框样式 */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.toast {
+    background-color: rgba(59, 59, 59, 0.9);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    max-width: 300px;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.success {
+    border-left: 4px solid #28a745;
+}
+
+.toast.error {
+    border-left: 4px solid #dc3545;
+}
+
+.toast.info {
+    border-left: 4px solid var(--primary-color);
+}
+
+/* 音标样式 */
+.phonetic {
+    cursor: pointer;
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.phonetic:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.phonetic:active {
+    transform: scale(0.98);
+}
+
+/* 字典链接样式 */
+.dict-link {
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.dict-link:hover {
+    color: #4361ee;
+    opacity: 0.8;
+}
+
+.dict-link:active {
+    transform: scale(0.98);
+}

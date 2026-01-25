@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word'n'Friend~</title>
+    <!-- 添加favicon -->
+    <link rel="icon" href="./public/favicon.ico">
+    <link rel="stylesheet" href="./src/styles/style.css">
+</head>
+<body>
+    <div class="header">
+        <h2 class="main-header">Word'n'Friends~</h2>
+        <em>单词扩展学习AI助手</em>
+    </div>
+
+    <div class="control-panel">
+        <div class="control-item">
+            <span class="control-label">音标</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="phoneticToggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-text" id="phoneticType">英</span>
+        </div>
+        
+        <!-- 新增格式开关控件 -->
+        <div class="control-item">
+            <span class="control-label">格式</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="formatToggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-text" id="formatType">长</span>
+        </div>
+        
+        <div class="control-item">
+            <span class="control-label">联想数量</span>
+            <div class="slider-container">
+                <input type="range" min="1" max="10" value="5" class="range-slider" id="friendSlider">
+                <span class="slider-value" id="friendNumber">5</span>
+            </div>
+        </div>
+        <div class="control-item">
+            <span class="control-label">难度</span>
+            <div class="select-container">
+                <select id="difficultyLevel" class="select-dropdown">
+                    <option value="B">B级</option>
+                    <option value="A" selected>A级</option>
+                    <option value="S">S级</option>
+                    <option value="SS">SS级</option>
+                    <option value="SSS">SSS级</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="wordInput" placeholder="输入中/英文单词" onkeydown="if(event.key === 'Enter') getWordFriends()">
+        <button onclick="getWordFriends()">扩词</button>
+    </div>
+    
+    <div id="result">
+        <div class="result-controls">
+            <button class="result-button stop-button" style="display: none;">⏹</button>
+            <button class="result-button reset-button" style="display: none;">♻</button>
+        </div>
+        <div class="result-content"></div>
+    </div>
+
+    <button class="advanced-config-btn">⚙️配置</button>
+    <div class="config-panel">
+        <div class="config-item">
+            <label>选择配置</label>
+            <div class="config-select-row">
+                <select id="configSelect" class="select-dropdown"></select>
+                <div class="config-actions">
+                    <button class="delete-config">删除</button>
+                </div>
+            </div>
+        </div>
+        <div class="config-item">
+            <label>配置名称</label>
+            <input type="text" id="configName" placeholder="新配置名">
+        </div>
+        <div class="config-item">
+            <label>模型名称</label>
+            <input type="text" id="modelName" placeholder="deepseek-ai/DeepSeek-V3.2">
+        </div>
+        <div class="config-item">
+            <label>Base URL</label>
+            <input type="text" id="baseUrl" placeholder="https://api.siliconflow.cn/v1/chat/completions">
+        </div>
+        <div class="config-item">
+            <label>API Key</label>
+            <input type="password" id="apiKey" placeholder="sk-xxx...">
+        </div>
+        <div class="config-advice">
+            <a href="https://cloud.siliconflow.cn/i/YFdj78Mc" target="_blank" style="color: gray;opacity: 0.7;">没有API Key？申请SiliconFlow，注册赠送Deepseek模型2000万token</a>
+        </div>
+        <div class="config-actions">
+            <button class="add-new-config">新增配置</button>
+            <button class="cancel-config" style="display: none;">取消</button>
+            <button class="save-config">保存修改</button>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div>由 DeepSeek-V3 强力驱动</div>
+        <!-- <span class="appreciation"><img src="/assets/profile_128.png" class="mini-icon" alt="赞赏" title="点击查看赞赏码"></span> -->
+        <div style="font-size: 9px;">Word and friends @ 2025</div>
+    </div>
+    <!-- 添加弹出层 -->
+    <div id="appreciationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <img src="/assets/goodjob.jpg" class="full-image" alt="赞赏码">
+            <p>微信扫码，赞赏作者</p>
+            <p style="color: gray;opacity: 0.7;">yjy@2025  ctrlyjy@qq.com</p>
+        </div>
+    </div>
+    <!-- 提示容器 -->
+    <div class="toast-container"></div>
+    <!-- 加载主程序 -->
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+magiccode
+profile.png
+test*
+node_modules
+package-lock.json
+dist
+archive
+.env
+.env.*
+.env.local
+*.pptx
+*.ppt
